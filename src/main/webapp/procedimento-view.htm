@@ -1,16 +1,16 @@
 <article id="procedimento-view">
-    <header>
-        <h1>Procedimentos</h1>
-        <div>
-            <a href="$context/procedimento-edit.htm">New procedimento</a>
-        </div>
-    </header>
+    <h1>Procedimentos</h1>
 
     #if($mensagem)
     <p><mark>$mensagem</mark></p>
     #end
 
-    $formTable
+    ## Card da listagem: a ação "Novo" mora no cabeçalho do card (a faixa
+    ## perde a própria borda via .card .painel-acao) e a tabela dentro do quadro.
+    <div class="card">
+        #renderBotaoNovo("procedimento-edit.htm" "Novo procedimento")
+        $formTable
+    </div>
 
     <!-- Delete confirmation dialog (native <dialog>) -->
     <dialog id="deleteDialog">

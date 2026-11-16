@@ -1,4 +1,8 @@
 <article>
-  <header><strong>#if($id) Editar convênio #else New convênio #end</strong></header>
-    $form
+    <h1>#if($id) Editar convênio #else Novo convênio #end</h1>
+
+    ## Card do formulário
+    <div class="card">
+        $form
+    </div>
 </article>

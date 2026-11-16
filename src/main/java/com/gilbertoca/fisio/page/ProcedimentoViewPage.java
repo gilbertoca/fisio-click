@@ -46,7 +46,7 @@ public class ProcedimentoViewPage extends BorderPage {
         table.addColumn(new Column("modalidade.nome"));
         table.addColumn(new Column("situacao"));
 
-        Column actionsCol = new Column("actions");
+        Column actionsCol = new Column("actions", "Ações");
         AbstractLink[] links = new AbstractLink[] { editLink, deleteLink };
         actionsCol.setDecorator(new LinkDecorator(table, links, "id"));
         table.addColumn(actionsCol);

@@ -3,19 +3,137 @@ html {
     height: 100%;
 }
 
+/* Coluna de conteúdo do tema (46rem ≈ 736px) realinhada à largura do corpo
+   (1200px − padding): nav e conteúdo passam a compartilhar a mesma coluna —
+   no desktop o menu deixa de ser espremido ("Fisio"/"Log out" cortados).
+   No mobile nada muda: o override de empilhamento governa ≤ 40rem. */
+:root {
+    --content-width: 73rem;
+}
+
 body {
     min-height: 100%;
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 1rem;
-    
+
     /* Configura o grid para empurrar o rodapé */
     display: grid;
     grid-template-rows: auto 1fr auto;
 }
 
+/* main é item do grid do body: grid items têm min-width:auto e herdavam a
+   largura mínima do conteúdo — a tabela larga empurrava a página inteira
+   para fora da viewport e o overflow-x:auto das tabelas nunca engatava.
+   min-width:0 solta o item; as tabelas passam a rolar dentro delas mesmas
+   (regra ≤40rem) em vez de estourar a página. */
+main {
+    min-width: 0;
+}
+
 footer {
     padding: 1.5rem 0;
     border-top: 1px solid var(--border-muted);
+}
+
+/* Menu: empilhar em telas pequenas em vez de scroll horizontal (o Bahunya
+   mantém a barra fixa de 3rem com overflow-x auto e scrollbar escondida,
+   cortando os itens). Em ≤ 40rem a nav volta ao fluxo do documento: sem
+   position fixed, linhas quebram conforme o espaço e a compensação de
+   padding-top do tema deixa de valer. */
+@media (max-width: 40rem) {
+    body > header:first-child > nav {
+        position: static;
+        height: auto;
+        flex-wrap: wrap;
+    }
+    body > header:first-child > nav > ul {
+        flex-wrap: wrap;
+        overflow-x: visible;
+        height: auto;
+    }
+    body > header:first-child > nav > ul > li,
+    body > header:first-child > nav a,
+    body > header:first-child > nav summary {
+        height: auto;
+    }
+    body:has(> header:first-child > nav) {
+        padding-top: 0;
+    }
+}
+
+/* Tabela larga em tela pequena: rola DENTRO da própria tabela em vez de
+   estourar a página inteira (display:block transforma a table num bloco
+   rolável; os quadros compactos 3x2 cabem no espaço e não ganham scrollbar) */
+@media (max-width: 40rem) {
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+}
+
+/* Faixa de ação das listagens e painéis: retângulo discreto com o botão de
+   ação alinhado à direita (padrão GACE/CredBem), SEM cor de fundo — apenas
+   o bloco (borda). Variáveis do tema — vale no light e no dark. */
+.painel-acao {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: var(--space-2) var(--space-4);
+    margin: 0 0 var(--space-4);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-sm);
+}
+
+.painel-acao button {
+    margin: 0;
+}
+
+/* Listagens: a Table do Click (id "table") ocupa a largura do conteúdo —
+   o tema não impõe largura e a tabela encolhia às colunas. Os quadros
+   compactos 3x2 da sala/painéis não têm id "table" e ficam como estão. */
+table#table {
+    width: 100%;
+}
+
+/* Listagem (Table do Click, id "table"): o Bahunya deixa td/th nowrap — com
+   os inputs de filtro e datas, a largura mínima estoura o card e a tabela
+   mostra barra de rolagem mesmo em tela grande. Deixa o texto quebrar onde
+   precisar e acota o input de filtro. Os quadros compactos 3x2 (sem id
+   "table") mantêm o nowrap do tema. */
+table#table th,
+table#table td {
+    white-space: normal;
+}
+
+table#table input[type="text"] {
+    width: 10rem;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Card: quadro genérico da linguagem visual (ficha, listagem, formulário) —
+   o card É o divisor da página: um por unidade de conteúdo, título fora,
+   nunca aninhado. Mesma gramática do .painel-acao, sem fundo. */
+.card {
+    padding: var(--space-4);
+    margin: 0 0 var(--space-4);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-sm);
+}
+
+/* A faixa de ação quando mora DENTRO de um card (direto ou dentro do form):
+   perde o próprio quadro — uma borda só na página — e vira o cabeçalho do
+   card, ação à direita. */
+.card .painel-acao {
+    border: 0;
+    border-radius: 0;
+    padding: 0 0 var(--space-3);
+    margin: 0 0 var(--space-3);
+}
+
+/* Quadro compacto 3x2 como filho direto do card: encostado no quadro */
+.card > table {
+    margin: 0;
 }

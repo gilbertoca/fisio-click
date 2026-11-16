@@ -1,12 +1,12 @@
 <article id="convenio-view">
-    <header>
-        <h1>Convênios</h1>
-        <div>
-            <a href="$context/convenio-edit.htm">New convênio</a>
-        </div>
-    </header>
+    <h1>Convênios</h1>
 
-    $formTable
+    ## Card da listagem: a ação "Novo" mora no cabeçalho do card (a faixa
+    ## perde a própria borda via .card .painel-acao) e a tabela dentro do quadro.
+    <div class="card">
+        #renderBotaoNovo("convenio-edit.htm" "Novo convênio")
+        $formTable
+    </div>
 
     <!-- Delete confirmation dialog (native <dialog>) -->
     <dialog id="deleteDialog">

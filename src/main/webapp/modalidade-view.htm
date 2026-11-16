@@ -1,12 +1,12 @@
 <article id="modalidade-view">
-    <header>
-        <h1>Modalidades</h1>
-        <div>
-            <a href="$context/modalidade-edit.htm">New modalidade</a>
-        </div>
-    </header>
+    <h1>Modalidades</h1>
 
-    $formTable
+    ## Card da listagem: a ação "Novo" mora no cabeçalho do card (a faixa
+    ## perde a própria borda via .card .painel-acao) e a tabela dentro do quadro.
+    <div class="card">
+        #renderBotaoNovo("modalidade-edit.htm" "Nova modalidade")
+        $formTable
+    </div>
 
     <!-- Delete confirmation dialog (native <dialog>) -->
     <dialog id="deleteDialog">

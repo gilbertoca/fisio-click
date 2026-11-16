@@ -104,6 +104,38 @@ public class SessaoService {
         }
     }
 
+    /**
+     * Painel do cliente: TODAS as sessões dele (agendadas e atendidas —
+     * todos os estados do ciclo), mais recentes primeiro. clienteId null
+     * retorna lista vazia (página sem id navega de volta à listagem).
+     */
+    public List<Sessao> listarPorCliente(Integer clienteId) {
+        if (clienteId == null) {
+            return List.of();
+        }
+        try (Connection conn = DataSourceManager.getSql2o().open()) {
+            return conn.createQuery(QueryLoader.get("sessao.getAllPorCliente"))
+                    .addParameter("clienteId", clienteId)
+                    .executeAndFetch(Sessao.class);
+        }
+    }
+
+    /**
+     * Painel do profissional: TODAS as sessões dele (agendadas e atendidas —
+     * todos os estados do ciclo), mais recentes primeiro. profissionalId null
+     * retorna lista vazia (página sem id navega de volta à listagem).
+     */
+    public List<Sessao> listarPorProfissional(Integer profissionalId) {
+        if (profissionalId == null) {
+            return List.of();
+        }
+        try (Connection conn = DataSourceManager.getSql2o().open()) {
+            return conn.createQuery(QueryLoader.get("sessao.getAllPorProfissional"))
+                    .addParameter("profissionalId", profissionalId)
+                    .executeAndFetch(Sessao.class);
+        }
+    }
+
     public List<Sessao> listarAgendaDoDia(LocalDate dataFiltro) {
         return listarAgendaDoDia(dataFiltro, null);
     }

@@ -1,15 +1,19 @@
 <article>
-    <header>
-        <h2>Agendamento</h2>
-    </header>
+    <h2>Agendamento</h2>
     <p><small>Últimas sessões na fila: agendadas e confirmadas aguardando o atendimento.</small></p>
-    $tabelaFila
+
+    ## Card da fila
+    <div class="card">
+        $tabelaFila
+    </div>
 </article>
 
 <article>
-    <header>
-        <h2>Atendimento</h2>
-    </header>
+    <h2>Atendimento</h2>
     <p><small>Últimos atendimentos com registro iniciado: em andamento e realizadas.</small></p>
-    $tabelaAtendimento
+
+    ## Card dos atendimentos
+    <div class="card">
+        $tabelaAtendimento
+    </div>
 </article>

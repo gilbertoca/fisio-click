@@ -29,7 +29,7 @@ public class ClienteServiceTest {
 
         //Insere os dados básicos de convênio para testar a associação do grafo rico.
         try (Connection conn = DataSourceManager.getSql2o().beginTransaction()) {
-            convenioIdUnimed = conn.createQuery("INSERT INTO fisio.convenio (nome, cnpj) VALUES ('Unimed Teresina', '12345678000199')", true)
+            convenioIdUnimed = conn.createQuery("INSERT INTO fisio.convenio (nome, cnpj, endereco, bairro, cep, cidade) VALUES ('Unimed Teresina', '12345678000199', 'Av. Frei Serafim, 2000', 'Centro', '64000150', 'Teresina')", true)
                     .executeUpdate()
                     .getKey(Integer.class);
             conn.commit();
@@ -53,6 +53,10 @@ public class ClienteServiceTest {
         novoCliente.setTelefone("8699994455");
         novoCliente.setSituacao("ATIVO");
         novoCliente.setConvenio(planoUnimed); // Vincula o objeto rico de domínio
+        novoCliente.setEndereco("Rua das Laranjeiras, 45");
+        novoCliente.setBairro("Jardim Botânico");
+        novoCliente.setCep("64000780");
+        novoCliente.setCidade("Teresina");
 
         clienteService.create(novoCliente);
 
@@ -77,6 +81,11 @@ public class ClienteServiceTest {
         assertEquals("Mariana Costa Lima", clientePersistido.getNome());
         assertEquals("55566677788", clientePersistido.getCpf());
         assertEquals(LocalDate.of(1993, 9, 22), clientePersistido.getDtNascimento());
+        // Endereço (V3): round-trip create/get pelo mapeamento sql2o
+        assertEquals("Rua das Laranjeiras, 45", clientePersistido.getEndereco());
+        assertEquals("Jardim Botânico", clientePersistido.getBairro());
+        assertEquals("64000780", clientePersistido.getCep());
+        assertEquals("Teresina", clientePersistido.getCidade());
 
         // PROVA DO GRAFO ANINHADO: O Sql2o preencheu o convênio interno do cliente de forma transparente
         assertNotNull("O objeto Convenio interno não deveria estar nulo", clientePersistido.getConvenio());
@@ -137,6 +146,11 @@ public class ClienteServiceTest {
         Convenio buscaIndividual = clienteService.getConvenioById(convenioIdUnimed);
         assertNotNull(buscaIndividual);
         assertEquals("Unimed Teresina", buscaIndividual.getNome());
+        // Endereço do convênio (V3): mapeado pela query convenio.get
+        assertEquals("Av. Frei Serafim, 2000", buscaIndividual.getEndereco());
+        assertEquals("Centro", buscaIndividual.getBairro());
+        assertEquals("64000150", buscaIndividual.getCep());
+        assertEquals("Teresina", buscaIndividual.getCidade());
     }
 
     @AfterClass

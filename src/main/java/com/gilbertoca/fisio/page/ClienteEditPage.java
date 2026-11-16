@@ -19,6 +19,10 @@ public class ClienteEditPage extends BorderPage {
     private final LocalDateField dtNascimento;
     private final TextField telefone;
     private final TextField email;
+    private final TextField endereco;
+    private final TextField bairro;
+    private final TextField cep;
+    private final TextField cidade;
     //private final Select selectConvenio;
     private final Select selectSituacao;
     private final ClienteService clienteService = new ClienteService();
@@ -31,6 +35,10 @@ public class ClienteEditPage extends BorderPage {
         dtNascimento = new LocalDateField("dtNascimento", "Data de Nascimento:", true);
         telefone = new TextField("telefone", "Telefone/Celular:", false);
         email = new TextField("email", "Email:", false);
+        endereco = new TextField("endereco", "Endereço:", false);
+        bairro = new TextField("bairro", "Bairro:", false);
+        cep = new TextField("cep", "CEP (Somente Números):", false);
+        cidade = new TextField("cidade", "Cidade:", false);
         //selectConvenio = new Select("convenio", "Plano de Saúde / Convênio:", false);
         selectSituacao = new Select("situacao", "Situação:", true);
 
@@ -40,6 +48,10 @@ public class ClienteEditPage extends BorderPage {
         form.add(dtNascimento);
         form.add(telefone);
         form.add(email);
+        form.add(endereco);
+        form.add(bairro);
+        form.add(cep);
+        form.add(cidade);
         //form.add(selectConvenio);
         form.add(selectSituacao);
         form.add(new Submit("save", "Salvar", this, "onSaveClick"));

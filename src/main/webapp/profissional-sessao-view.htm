@@ -1,0 +1,43 @@
+<article id="profissional-sessao-view">
+    <h1>Profissionais</h1>
+
+    #if($profissional)
+    ## Card 1: a ficha de identidade — e a ação Editar mora com ela (topo,
+    ## à direita, mesmo padrão das listagens: ação acima do conteúdo que
+    ## afeta). Botão nativo com o id via campo hidden — form GET, zero JS.
+    <div class="card">
+        <div class="painel-acao">
+            <form method="get" action="$context/profissional-edit.htm">
+                <input type="hidden" name="id" value="$!profissional.id">
+                <button>Editar</button>
+            </form>
+        </div>
+
+        ## Ficha resumida: mesmo quadro compacto 3x2 do painel do cliente
+        ## (cliente-sessao-view.htm), dados direto do $profissional publicado
+        ## em onRender — exibição pura, sem formulário.
+        <table>
+            <tbody>
+                <tr>
+                    <th scope="row">Nome</th><td><strong>$!profissional.nome</strong></td>
+                    <th scope="row">CPF</th><td>$!profissional.cpf</td>
+                </tr>
+                <tr>
+                    <th scope="row">Telefone</th><td>$!profissional.telefone</td>
+                    <th scope="row">E-mail</th><td>$!profissional.email</td>
+                </tr>
+                <tr>
+                    <th scope="row">Registro</th><td>$!profissional.registroNumero</td>
+                    <th scope="row">Órgão</th><td>$!profissional.registroOrgao</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    ## Card 2: as sessões — o registro dinâmico, listagem de verdade.
+    <div class="card">
+        <h2>Sessões (agendadas e atendidas)</h2>
+        $formTable
+    </div>
+    #end
+</article>

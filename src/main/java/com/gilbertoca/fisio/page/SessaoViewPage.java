@@ -3,18 +3,21 @@ package com.gilbertoca.fisio.page;
 import com.gilbertoca.fisio.model.Sessao;
 import com.gilbertoca.fisio.model.enums.SessaoSituacao;
 import com.gilbertoca.fisio.service.SessaoService;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import org.apache.click.Context;
 import org.apache.click.control.ActionLink;
 import org.apache.click.control.AbstractLink;
 import org.apache.click.control.Column;
+import org.apache.click.control.Decorator;
 import org.apache.click.control.Form;
 import org.apache.click.control.PageLink;
 import org.apache.click.control.Table;
 import org.apache.click.control.TablePaginator;
 import org.apache.click.dataprovider.DataProvider;
 import org.apache.click.extras.control.LinkDecorator;
+import org.apache.click.util.ClickUtils;
 import org.apache.click.util.HtmlStringBuffer;
 
 /**
@@ -36,6 +39,10 @@ public class SessaoViewPage extends BorderPage {
 
     private static final long serialVersionUID = 1L;
 
+    /** Formato da coluna de início nas listagens (a data é LocalDateTime). */
+    private static final DateTimeFormatter FORMATO_INICIO =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
     private final SessaoService sessaoService = new SessaoService();
     private Form form = new Form("formTable");
     private Table table = new Table("table");
@@ -49,21 +56,31 @@ public class SessaoViewPage extends BorderPage {
         table.setSortable(true);
         table.setPaginator(new TablePaginator(table));
 
-        Column inicioCol = new Column("dataHoraInicio");
+        Column inicioCol = new Column("dataHoraInicio", "Data Hora Início");
+        // dataHoraInicio é LocalDateTime (java.time): o setFormat do Column usa
+        // MessageFormat, que só formata java.util.Date ("Cannot format given
+        // Object as a Date"). O decorator formata com DateTimeFormatter —
+        // a ordenação continua pelo valor cru da coluna.
+        inicioCol.setDecorator(new Decorator() {
+            @Override
+            public String render(Object row, Context context) {
+                return ((Sessao) row).getDataHoraInicio().format(FORMATO_INICIO);
+            }
+        });
         inicioCol.setSortable(true);
         table.addColumn(inicioCol);
 
-        table.addColumn(new Column("cliente.nome"));
+        table.addColumn(decorarCliente(new Column("cliente.nome", "Cliente")));
 
-        Column profissionalCol = new Column("profissional.nome");
+        Column profissionalCol = decorarProfissional(new Column("profissional.nome", "Profissional"));
         profissionalCol.setFilterBy("profissional.nome");
         table.addColumn(profissionalCol);
 
-        table.addColumn(new Column("modalidade.nome"));
-        table.addColumn(new Column("sessaoTipo"));
-        table.addColumn(new Column("situacao"));
+        table.addColumn(new Column("modalidade.nome", "Modalidade"));
+        table.addColumn(new Column("sessaoTipo", "Tipo"));
+        table.addColumn(new Column("situacao", "Situação"));
 
-        Column actionsCol = new Column("actions");
+        Column actionsCol = new Column("actions", "Ações");
         AbstractLink[] links = new AbstractLink[] { editLink, deleteLink };
         // Mesma mecânica de SessaoProntuarioViewPage: o LinkDecorator
         // reutiliza as MESMAS instâncias de link em todas as linhas, então o
@@ -116,6 +133,42 @@ public class SessaoViewPage extends BorderPage {
     public void onInit() {
         super.onInit();
         addModel("title", "Agenda do Dia");
+    }
+
+    /**
+     * Navegação cruzada nas colunas de pessoas: o nome do cliente e o do
+     * profissional renderizam como link para o painel correspondente
+     * (ClienteSessaoViewPage/ProfissionalSessaoViewPage). Column.setDecorator
+     * (Click nativo, sem extras): o HTML devolvido entra cru na célula;
+     * ordenação e filtro continuam pela propriedade — o decorator só afeta o
+     * desenho.
+     */
+    private Column decorarCliente(Column coluna) {
+        coluna.setDecorator(new Decorator() {
+            @Override
+            public String render(Object row, Context context) {
+                Sessao linha = (Sessao) row;
+                Integer clienteId = linha.getCliente().getId();
+                String nome = ClickUtils.escapeHtml(linha.getCliente().getNome());
+                return "<a href=\"" + context.getRequest().getContextPath()
+                        + "/cliente-sessao-view.htm?id=" + clienteId + "\">" + nome + "</a>";
+            }
+        });
+        return coluna;
+    }
+
+    private Column decorarProfissional(Column coluna) {
+        coluna.setDecorator(new Decorator() {
+            @Override
+            public String render(Object row, Context context) {
+                Sessao linha = (Sessao) row;
+                Integer profissionalId = linha.getProfissional().getId();
+                String nome = ClickUtils.escapeHtml(linha.getProfissional().getNome());
+                return "<a href=\"" + context.getRequest().getContextPath()
+                        + "/profissional-sessao-view.htm?id=" + profissionalId + "\">" + nome + "</a>";
+            }
+        });
+        return coluna;
     }
 
     /**

@@ -9,6 +9,10 @@ public class Convenio implements Serializable {
     private Integer id;
     private String nome;
     private String cnpj;
+    private String endereco;
+    private String bairro;
+    private String cep;
+    private String cidade;
 
     public Convenio() {}
 
@@ -20,6 +24,15 @@ public class Convenio implements Serializable {
 
     public String getCnpj() { return cnpj; }
     public void setCnpj(String cnpj) { this.cnpj = cnpj; }
+
+    public String getEndereco() { return endereco; }
+    public void setEndereco(String endereco) { this.endereco = endereco; }
+    public String getBairro() { return bairro; }
+    public void setBairro(String bairro) { this.bairro = bairro; }
+    public String getCep() { return cep; }
+    public void setCep(String cep) { this.cep = cep; }
+    public String getCidade() { return cidade; }
+    public void setCidade(String cidade) { this.cidade = cidade; }
 
     @Override
     public int hashCode() {
@@ -58,6 +71,10 @@ public class Convenio implements Serializable {
         sb.append("id=").append(id);
         sb.append(", nome=").append(nome);
         sb.append(", cnpj=").append(cnpj);
+        sb.append(", endereco=").append(endereco);
+        sb.append(", bairro=").append(bairro);
+        sb.append(", cep=").append(cep);
+        sb.append(", cidade=").append(cidade);
         sb.append('}');
         return sb.toString();
     }

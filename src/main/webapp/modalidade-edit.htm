@@ -1,4 +1,8 @@
 <article>
-  <header><strong>#if($id) Editar modalidade #else New modalidade #end</strong></header>
-    $form
+    <h1>#if($id) Editar modalidade #else Nova modalidade #end</h1>
+
+    ## Card do formulário
+    <div class="card">
+        $form
+    </div>
 </article>

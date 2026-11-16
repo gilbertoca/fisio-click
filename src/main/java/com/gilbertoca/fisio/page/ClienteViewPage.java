@@ -25,7 +25,8 @@ public class ClienteViewPage extends BorderPage {
     private Table table = new Table("table");
     private PageLink editLink = new PageLink("edit", "Edit", ClienteEditPage.class);
     private ActionLink deleteLink = new ActionLink("delete", "Delete", this, "onDelete");
-
+    /** Painel do cliente: ficha + sessões dele (agendadas/atendidas). */
+    private PageLink viewLink = new PageLink("view", "Visualizar", ClienteSessaoViewPage.class);
     public ClienteViewPage() {
         form.setNoLayout(true);
         // Bahunya's native table classes. Do NOT use Table.CLASS_ITS, which
@@ -47,9 +48,9 @@ public class ClienteViewPage extends BorderPage {
 
         table.addColumn(new Column("telefone"));
 
-        Column actionsCol = new Column("actions");
+        Column actionsCol = new Column("actions", "Ações");
         //actionsCol.setTitle("Actions");
-        AbstractLink[] links = new AbstractLink[] { editLink, deleteLink };
+        AbstractLink[] links = new AbstractLink[] { viewLink, editLink, deleteLink };
         actionsCol.setDecorator(new LinkDecorator(table, links, "id"));
         table.addColumn(actionsCol);
 
@@ -70,6 +71,7 @@ public class ClienteViewPage extends BorderPage {
         form.add(table);       
         addControl(editLink);
         addControl(deleteLink);
+        addControl(viewLink);
         addControl(table);
         addControl(form);
     }

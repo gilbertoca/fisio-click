@@ -1,12 +1,12 @@
 <article id="profissional-view">
-    <header>
-        <h1>Profissionais</h1>
-        <div>
-            <a href="$context/profissional-edit.htm">New profissional</a>
-        </div>
-    </header>
+    <h1>Profissionais</h1>
 
-    $formTable
+    ## Card da listagem: a ação "Novo" mora no cabeçalho do card (a faixa
+    ## perde a própria borda via .card .painel-acao) e a tabela dentro do quadro.
+    <div class="card">
+        #renderBotaoNovo("profissional-edit.htm" "Novo profissional")
+        $formTable
+    </div>
 
     <!-- Delete confirmation dialog (native <dialog>) -->
     <dialog id="deleteDialog">

@@ -28,6 +28,8 @@ public class ProfissionalViewPage extends BorderPage {
     private Table table = new Table("table");
     private PageLink editLink = new PageLink("edit", "Edit", ProfissionalEditPage.class);
     private ActionLink deleteLink = new ActionLink("delete", "Delete", this, "onDelete");
+    /** Painel do profissional: ficha + sessões dele (agendadas/atendidas). */
+    private PageLink viewLink = new PageLink("view", "Visualizar", ProfissionalSessaoViewPage.class);
 
     public ProfissionalViewPage() {
         form.setNoLayout(true);
@@ -46,8 +48,8 @@ public class ProfissionalViewPage extends BorderPage {
 
         table.addColumn(new Column("telefone"));
 
-        Column actionsCol = new Column("actions");
-        AbstractLink[] links = new AbstractLink[] { editLink, deleteLink };
+        Column actionsCol = new Column("actions", "Ações");
+        AbstractLink[] links = new AbstractLink[] { viewLink, editLink, deleteLink };
         actionsCol.setDecorator(new LinkDecorator(table, links, "id"));
         table.addColumn(actionsCol);
 
@@ -61,9 +63,10 @@ public class ProfissionalViewPage extends BorderPage {
             }
         });
 
-        form.add(table);
+        form.add(table);       
         addControl(editLink);
         addControl(deleteLink);
+        addControl(viewLink);
         addControl(table);
         addControl(form);
     }

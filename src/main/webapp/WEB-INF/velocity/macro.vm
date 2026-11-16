@@ -12,12 +12,15 @@
     #if($authenticated)
       <li>
         #if($item.hasChildren())
-          <!-- Item pai do dropdown -->
-          <a href="#">$item.label</a>
-          <!-- Submenu semântico que o Bahunya transforma em dropdown automático -->
-          <ul>
-            #renderMenu($item)
-          </ul>
+          <!-- Submenu via details/summary: padrão que o Bahunya reconhece
+               (dropdown por clique, full-width em telas pequenas — o par
+               <a>+<ul> aninhado só abria por hover, morto em tela de toque) -->
+          <details>
+            <summary>$item.label</summary>
+            <ul>
+              #renderMenu($item)
+            </ul>
+          </details>
         #else
           <!-- Item de link comum -->
           <a href="$item.href">$item.label</a>
@@ -25,4 +28,19 @@
       </li>
     #end
   #end
+#end
+
+#**
+ * Botão de criação ("Novo registro") do cabeçalho das listagens: form GET +
+ * button nativo do HTML — navega para a página de edição sem JavaScript e
+ * sem CSS extra (o Bahunya estiliza o elemento button). Centralizado aqui:
+ * qualquer ajuste de markup muda em um lugar só. Uso:
+ *   #renderBotaoNovo("cliente-edit.htm" "Novo cliente")
+ *#
+#macro(renderBotaoNovo $caminho $rotulo)
+<div class="painel-acao">
+    <form method="get" action="$context/$caminho">
+        <button>$rotulo</button>
+    </form>
+</div>
 #end

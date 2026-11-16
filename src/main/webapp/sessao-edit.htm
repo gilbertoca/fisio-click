@@ -1,4 +1,8 @@
 <article>
-  <header><strong>#if($id) Editar sessão #else Nova sessão #end</strong></header>
-    $form
+    <h1>#if($id) Editar sessão #else Nova sessão #end</h1>
+
+    ## Card do formulário
+    <div class="card">
+        $form
+    </div>
 </article>

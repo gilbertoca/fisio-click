@@ -1,4 +1,8 @@
 <article>
-  <header><strong>#if($id) Editar profissional #else New profissional #end</strong></header>
-    $form
+    <h1>#if($id) Editar profissional #else Novo profissional #end</h1>
+
+    ## Card do formulário
+    <div class="card">
+        $form
+    </div>
 </article>

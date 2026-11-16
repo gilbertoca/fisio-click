@@ -14,6 +14,10 @@ public class ConvenioEditPage extends BorderPage {
     private final Form form = new Form("form");
     private final TextField nome;
     private final TextField cnpj;
+    private final TextField endereco;
+    private final TextField bairro;
+    private final TextField cep;
+    private final TextField cidade;
     private final ConvenioService convenioService = new ConvenioService();
 
     public ConvenioEditPage() {
@@ -21,10 +25,18 @@ public class ConvenioEditPage extends BorderPage {
 
         nome = new TextField("nome", "Nome do Convênio:", true);
         cnpj = new TextField("cnpj", "CNPJ (Somente Números):", true);
+        endereco = new TextField("endereco", "Endereço:", false);
+        bairro = new TextField("bairro", "Bairro:", false);
+        cep = new TextField("cep", "CEP (Somente Números):", false);
+        cidade = new TextField("cidade", "Cidade:", false);
 
         form.add(idField);
         form.add(nome);
         form.add(cnpj);
+        form.add(endereco);
+        form.add(bairro);
+        form.add(cep);
+        form.add(cidade);
         form.add(new Submit("save", "Salvar", this, "onSaveClick"));
         form.add(new Submit("cancel", "Cancelar", this, "onCancelClick"));
         addControl(form);

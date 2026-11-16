@@ -44,7 +44,7 @@ public class ModalidadeViewPage extends BorderPage {
         table.addColumn(new Column("valorBase"));
         table.addColumn(new Column("capacidadeSimultanea"));
 
-        Column actionsCol = new Column("actions");
+        Column actionsCol = new Column("actions", "Ações");
         AbstractLink[] links = new AbstractLink[] { editLink, deleteLink };
         actionsCol.setDecorator(new LinkDecorator(table, links, "id"));
         table.addColumn(actionsCol);
