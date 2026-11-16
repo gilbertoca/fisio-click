@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<click-app charset="UTF-8" locale="en">
+<click-app charset="UTF-8" locale="pt_BR">
     <resource-service classname="org.apache.click.service.BasicResourceService"/>
     <pages package="com.gilbertoca.fisio.page"/>
     <mode value="trace"/>

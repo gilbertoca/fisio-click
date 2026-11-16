@@ -52,6 +52,10 @@ public class SessaoEditPage extends BorderPage {
     public SessaoEditPage() {
         form.setNoLayout(true);
 
+        // Foco no primeiro campo ao abrir (Field.setFocus renderiza o
+        // atributo nativo autofocus — sem JavaScript).
+        selectCliente.setFocus(true);
+
         form.add(idField);
         form.add(selectCliente);
         form.add(selectProfissional);

@@ -153,6 +153,48 @@ public class ClienteServiceTest {
         assertEquals("Teresina", buscaIndividual.getCidade());
     }
 
+    @Test
+    public void deveBloquearExclusaoDeClienteComSessoesVinculadas() {
+        clienteService = new ClienteService();
+
+        // Cliente com uma sessão na agenda: a FK restritiva de
+        // fisio.sessao.cliente_id torna o DELETE físico impossível —
+        // o guard do service deve bloquear ANTES do banco estourar.
+        Integer idClienteGuard;
+        try (Connection conn = DataSourceManager.getSql2o().beginTransaction()) {
+            Integer idProfissional = conn.createQuery(
+                    "INSERT INTO fisio.profissional (nome, cpf, dt_nascimento, email, telefone, registro_numero, registro_orgao) "
+                    + "VALUES ('Dr. Guard Test', '99988877766', '1980-03-20', 'guard@fisioclin.com', '86888777999', 'CREFITO-999-P', 'CREFITO-3')", true)
+                    .executeUpdate().getKey(Integer.class);
+            Integer idModalidade = conn.createQuery(
+                    "INSERT INTO fisio.modalidade (nome, duracao_minutos, valor_base, capacidade_simultanea) "
+                    + "VALUES ('Pilates Guard', 50, 100.00, 4)", true)
+                    .executeUpdate().getKey(Integer.class);
+            idClienteGuard = conn.createQuery(
+                    "INSERT INTO fisio.cliente (nome, cpf, dt_nascimento, telefone, cliente_situacao) "
+                    + "VALUES ('Cliente Guard Test', '33344455566', '1990-05-10', '86', 'ATIVO')", true)
+                    .executeUpdate().getKey(Integer.class);
+            conn.createQuery(
+                    "INSERT INTO fisio.sessao (cliente_id, profissional_id, modalidade_id, dt_hora_inicio, dt_hora_fim, sessao_tipo, pagamento_origem, sessao_situacao) "
+                    + "VALUES (:clienteId, :profissionalId, :modalidadeId, '2026-03-10 08:00:00', '2026-03-10 08:50:00', 'TRATAMENTO', 'PARTICULAR', 'AGENDADA')")
+                    .addParameter("clienteId", idClienteGuard)
+                    .addParameter("profissionalId", idProfissional)
+                    .addParameter("modalidadeId", idModalidade)
+                    .executeUpdate();
+            conn.commit();
+        }
+
+        try {
+            clienteService.delete(idClienteGuard);
+            fail("Deveria bloquear a exclusão de cliente com sessões vinculadas.");
+        } catch (IllegalStateException ex) {
+            assertTrue("A mensagem deveria explicar o bloqueio.",
+                    ex.getMessage().contains("não pode ser excluído"));
+        }
+        assertNotNull("O cliente com histórico permanece no cadastro.",
+                clienteService.get(idClienteGuard));
+    }
+
     @AfterClass
     public static void tearDown() {
         DataSourceManager.shutdown();

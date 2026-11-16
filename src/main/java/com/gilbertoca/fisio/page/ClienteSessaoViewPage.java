@@ -4,12 +4,9 @@ import com.gilbertoca.fisio.model.Cliente;
 import com.gilbertoca.fisio.model.Sessao;
 import com.gilbertoca.fisio.service.ClienteService;
 import com.gilbertoca.fisio.service.SessaoService;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import org.apache.click.Context;
 import org.apache.click.control.AbstractLink;
 import org.apache.click.control.Column;
-import org.apache.click.control.Decorator;
 import org.apache.click.control.Form;
 import org.apache.click.control.PageLink;
 import org.apache.click.control.Table;
@@ -39,10 +36,6 @@ public class ClienteSessaoViewPage extends BorderPage {
 
     private static final long serialVersionUID = 1L;
 
-    /** Formato da coluna de início nas listagens (a data é LocalDateTime). */
-    private static final DateTimeFormatter FORMATO_INICIO =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-
     /** Id do cliente em foco, vindo do Visualizar da listagem. */
     @Bindable protected Integer id;
 
@@ -63,16 +56,10 @@ public class ClienteSessaoViewPage extends BorderPage {
         table.setPaginator(new TablePaginator(table));
 
         Column inicioCol = new Column("dataHoraInicio", "Data Hora Início");
-        // dataHoraInicio é LocalDateTime (java.time): o setFormat do Column usa
-        // MessageFormat, que só formata java.util.Date ("Cannot format given
-        // Object as a Date"). O decorator formata com DateTimeFormatter —
-        // a ordenação continua pelo valor cru da coluna.
-        inicioCol.setDecorator(new Decorator() {
-            @Override
-            public String render(Object row, Context context) {
-                return ((Sessao) row).getDataHoraInicio().format(FORMATO_INICIO);
-            }
-        });
+        // dataHoraInicio é LocalDateTime (java.time): suportado pelo
+        // Column.setFormat desde o CLK-64 — comportamento default do Click
+        // no lugar do Decorator manual.
+        inicioCol.setFormat("{0,date,dd/MM/yyyy HH:mm}");
         inicioCol.setSortable(true);
         table.addColumn(inicioCol);
 
@@ -83,6 +70,10 @@ public class ClienteSessaoViewPage extends BorderPage {
 
         // Ações: Visualizar (a sala, que se adapta ao estado da sessão)
         Column actionsCol = new Column("actions", "Ações");
+        // Sem propriedade "actions" no Sessao: ordenar por esta coluna estouraria
+        // no PropertyService (propriedade inexistente). Padrão do EditTable
+        // canônico do Click: coluna de ações nunca é ordenável.
+        actionsCol.setSortable(false);
         AbstractLink[] links = new AbstractLink[] { verLink };
         actionsCol.setDecorator(new LinkDecorator(table, links, "id"));
         table.addColumn(actionsCol);
@@ -98,8 +89,13 @@ public class ClienteSessaoViewPage extends BorderPage {
         });
 
         formTable.add(table);
+
+        // Ação como ícone + tooltip nativo (title) — modo "só imagem" do
+        // AbstractLink; asset nosso em assets/images.
+        verLink.setImageSrc("/assets/images/visualizar.svg");
+        verLink.setTitle("Visualizar");
+
         addControl(verLink);
-        addControl(table);
         addControl(formTable);
     }
 

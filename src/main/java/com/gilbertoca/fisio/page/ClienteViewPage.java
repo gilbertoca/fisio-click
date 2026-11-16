@@ -23,8 +23,8 @@ public class ClienteViewPage extends BorderPage {
     private final ClienteService clienteService = new ClienteService();
     private Form form = new Form("formTable");
     private Table table = new Table("table");
-    private PageLink editLink = new PageLink("edit", "Edit", ClienteEditPage.class);
-    private ActionLink deleteLink = new ActionLink("delete", "Delete", this, "onDelete");
+    private PageLink editLink = new PageLink("edit", "Editar", ClienteEditPage.class);
+    private ActionLink deleteLink = new ActionLink("delete", "Excluir", this, "onDelete");
     /** Painel do cliente: ficha + sessões dele (agendadas/atendidas). */
     private PageLink viewLink = new PageLink("view", "Visualizar", ClienteSessaoViewPage.class);
     public ClienteViewPage() {
@@ -37,19 +37,21 @@ public class ClienteViewPage extends BorderPage {
         table.setSortable(true);
         table.setPaginator(new TablePaginator(table));
 
-        Column nomeCol = new Column("nome");
+        Column nomeCol = new Column("nome", "Nome Completo");
         nomeCol.setSortable(true);
         nomeCol.setFilterBy("nome");
         table.addColumn(nomeCol);
 
-        Column emailCol = new Column("email");
+        Column emailCol = new Column("email", "Email");
         emailCol.setSortable(true);
         table.addColumn(emailCol);
 
-        table.addColumn(new Column("telefone"));
+        table.addColumn(new Column("telefone", "Telefone"));
 
         Column actionsCol = new Column("actions", "Ações");
-        //actionsCol.setTitle("Actions");
+        // Sem propriedade "actions": ordenar por esta coluna estouraria no
+        // PropertyService. Padrão do EditTable canônico: ações nunca ordenável.
+        actionsCol.setSortable(false);
         AbstractLink[] links = new AbstractLink[] { viewLink, editLink, deleteLink };
         actionsCol.setDecorator(new LinkDecorator(table, links, "id"));
         table.addColumn(actionsCol);
@@ -58,6 +60,15 @@ public class ClienteViewPage extends BorderPage {
         // is preserved on the link and copied to the modal's confirm
         // anchor at click time.
         deleteLink.setAttribute("onclick", "return onDeleteClick(this);");
+
+        // Ações como ícone + tooltip nativo (title) — modo "só imagem" do
+        // AbstractLink; asset nosso em assets/images.
+        viewLink.setImageSrc("/assets/images/visualizar.svg");
+        viewLink.setTitle("Visualizar");
+        editLink.setImageSrc("/assets/images/editar.svg");
+        editLink.setTitle("Editar");
+        deleteLink.setImageSrc("/assets/images/excluir.svg");
+        deleteLink.setTitle("Excluir");
 
         table.setDataProvider(new DataProvider<Cliente>() {
             @Override
@@ -72,7 +83,6 @@ public class ClienteViewPage extends BorderPage {
         addControl(editLink);
         addControl(deleteLink);
         addControl(viewLink);
-        addControl(table);
         addControl(form);
     }
 
@@ -85,10 +95,28 @@ public class ClienteViewPage extends BorderPage {
     /** Invoked by the ActionLink after the user confirms the modal. */
     public boolean onDelete() {
         Integer id = deleteLink.getValueInteger();
-        if (id != null) {
-            clienteService.delete(id.intValue());
+        if (id == null) {
+            return false;
         }
-        setRedirect(ClienteViewPage.class);
+        try {
+            clienteService.delete(id);
+            // PRG + flash de sessão: a mensagem de êxito sobrevive ao
+            // redirect e é exibida uma única vez (o F5 não repete nem a
+            // exclusão nem a mensagem).
+            avisarExclusaoConcluida();
+            setRedirect(ClienteViewPage.class);
+        } catch (IllegalStateException ex) {
+            // Cliente com sessões/faturamentos vinculados: o histórico não
+            // é apagável — avisa via flash e volta à listagem (PRG), em vez
+            // de estourar a error page.
+            avisar(ex.getMessage());
+            setRedirect(ClienteViewPage.class);
+        }
         return false;
+    }
+
+    @Override
+    protected String getMensagemExclusao() {
+        return "Cliente excluído com êxito.";
     }
 }

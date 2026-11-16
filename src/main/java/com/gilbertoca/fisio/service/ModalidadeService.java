@@ -35,9 +35,24 @@ public class ModalidadeService {
         }
     }
 
+    /**
+     * Guard de deleção na MESMA transação do DELETE (mesmo princípio de
+     * ProcedimentoService.delete): modalidade com procedimentos amarrados
+     * (catálogo) ou sessões (agenda) vinculadas não é apagável.
+     */
     public void delete(Integer id) {
-        try (Connection conn = DataSourceManager.getSql2o().open()) {
-            conn.createQuery(QueryLoader.get("modalidade.delete")).addParameter("id", id).executeUpdate();
+        try (Connection conn = DataSourceManager.getSql2o().beginTransaction()) {
+            Long dependentes = conn.createQuery(QueryLoader.get("modalidade.countDependentes"))
+                    .addParameter("id", id)
+                    .executeScalar(Long.class);
+            if (dependentes != null && dependentes > 0) {
+                throw new IllegalStateException(
+                        "Modalidade não pode ser excluída: existem procedimentos ou sessões vinculadas a ela.");
+            }
+            conn.createQuery(QueryLoader.get("modalidade.delete"))
+                    .addParameter("id", id)
+                    .executeUpdate();
+            conn.commit();
         }
     }
 

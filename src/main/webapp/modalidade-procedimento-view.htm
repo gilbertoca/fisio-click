@@ -1,0 +1,39 @@
+<article id="modalidade-procedimento-view">
+    <h1>Modalidades</h1>
+
+    #if($modalidade)
+    ## Card 1: a ficha de identidade — e a ação Editar mora com ela (topo,
+    ## à direita, mesmo padrão dos painéis: ação acima do conteúdo que
+    ## afeta). Botão nativo com o id via campo hidden — form GET, zero JS.
+    <div class="card">
+        <div class="painel-acao">
+            <form method="get" action="$context/modalidade-edit.htm">
+                <input type="hidden" name="id" value="$!modalidade.id">
+                <button>Editar</button>
+            </form>
+        </div>
+
+        ## Ficha resumida: mesmo quadro compacto dos painéis de cliente e
+        ## profissional, dados direto do $modalidade publicado em onRender —
+        ## exibição pura, sem formulário.
+        <table>
+            <tbody>
+                <tr>
+                    <th scope="row">Nome</th><td><strong>$!modalidade.nome</strong></td>
+                    <th scope="row">Duração</th><td>$!modalidade.duracaoMinutos min</td>
+                </tr>
+                <tr>
+                    <th scope="row">Valor Base</th><td>R$ $!modalidade.valorBase</td>
+                    <th scope="row">Capacidade</th><td>$!modalidade.capacidadeSimultanea</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    ## Card 2: o catálogo de procedimentos amarrados à modalidade.
+    <div class="card">
+        <h2>Procedimentos (catálogo da modalidade)</h2>
+        $formTable
+    </div>
+    #end
+</article>

@@ -31,6 +31,9 @@ public class ClienteEditPage extends BorderPage {
         form.setNoLayout(true);
         
         nome = new TextField("nome", "Nome Completo:", true);
+        // Foco no primeiro campo ao abrir (Field.setFocus renderiza o
+        // atributo nativo autofocus — sem JavaScript).
+        nome.setFocus(true);
         cpf = new TextField("cpf", "CPF (Somente Números):", false);
         dtNascimento = new LocalDateField("dtNascimento", "Data de Nascimento:", true);
         telefone = new TextField("telefone", "Telefone/Celular:", false);

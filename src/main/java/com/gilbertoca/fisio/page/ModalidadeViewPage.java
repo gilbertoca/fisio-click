@@ -16,8 +16,9 @@ import com.gilbertoca.fisio.model.Modalidade;
 import com.gilbertoca.fisio.service.ModalidadeService;
 
 /**
- * Modalidade view page. Filtro por nome na tabela, encaminhado ao service
- * (clienteService.getAllLikeNome(filters.get("nome")) pattern).
+ * Listagem de modalidades. Filtro por nome na tabela, encaminhado ao service
+ * (getAllLikeNome(filters.get("nome")) pattern). Ação Visualizar abre o
+ * painel da modalidade (ficha + catálogo de procedimentos amarrados).
  */
 public class ModalidadeViewPage extends BorderPage {
 
@@ -26,8 +27,9 @@ public class ModalidadeViewPage extends BorderPage {
     private final ModalidadeService modalidadeService = new ModalidadeService();
     private Form form = new Form("formTable");
     private Table table = new Table("table");
-    private PageLink editLink = new PageLink("edit", "Edit", ModalidadeEditPage.class);
-    private ActionLink deleteLink = new ActionLink("delete", "Delete", this, "onDelete");
+    private PageLink viewLink = new PageLink("ver", "Visualizar", ModalidadeProcedimentoViewPage.class);
+    private PageLink editLink = new PageLink("edit", "Editar", ModalidadeEditPage.class);
+    private ActionLink deleteLink = new ActionLink("delete", "Excluir", this, "onDelete");
 
     public ModalidadeViewPage() {
         form.setNoLayout(true);
@@ -35,21 +37,34 @@ public class ModalidadeViewPage extends BorderPage {
         table.setSortable(true);
         table.setPaginator(new TablePaginator(table));
 
-        Column nomeCol = new Column("nome");
+        Column nomeCol = new Column("nome", "Nome");
         nomeCol.setSortable(true);
         nomeCol.setFilterBy("nome");
         table.addColumn(nomeCol);
 
-        table.addColumn(new Column("duracaoMinutos"));
-        table.addColumn(new Column("valorBase"));
-        table.addColumn(new Column("capacidadeSimultanea"));
+        table.addColumn(new Column("duracaoMinutos", "Duração (min)"));
+        table.addColumn(new Column("valorBase", "Valor Base (R$)"));
+        table.addColumn(new Column("capacidadeSimultanea", "Capacidade"));
 
         Column actionsCol = new Column("actions", "Ações");
-        AbstractLink[] links = new AbstractLink[] { editLink, deleteLink };
+        // Sem propriedade "actions" no Modalidade: ordenar por esta coluna
+        // estouraria no PropertyService (propriedade inexistente). Padrão do
+        // EditTable canônico do Click: coluna de ações nunca é ordenável.
+        actionsCol.setSortable(false);
+        AbstractLink[] links = new AbstractLink[] { viewLink, editLink, deleteLink };
         actionsCol.setDecorator(new LinkDecorator(table, links, "id"));
         table.addColumn(actionsCol);
 
         deleteLink.setAttribute("onclick", "return onDeleteClick(this);");
+
+        // Ações como ícone + tooltip nativo (title) — modo "só imagem" do
+        // AbstractLink; asset nosso em assets/images.
+        viewLink.setImageSrc("/assets/images/visualizar.svg");
+        viewLink.setTitle("Visualizar");
+        editLink.setImageSrc("/assets/images/editar.svg");
+        editLink.setTitle("Editar");
+        deleteLink.setImageSrc("/assets/images/excluir.svg");
+        deleteLink.setTitle("Excluir");
 
         table.setDataProvider(new DataProvider<Modalidade>() {
             @Override
@@ -60,9 +75,9 @@ public class ModalidadeViewPage extends BorderPage {
         });
 
         form.add(table);
+        addControl(viewLink);
         addControl(editLink);
         addControl(deleteLink);
-        addControl(table);
         addControl(form);
     }
 
@@ -75,10 +90,27 @@ public class ModalidadeViewPage extends BorderPage {
     /** Invoked by the ActionLink after the user confirms the modal. */
     public boolean onDelete() {
         Integer id = deleteLink.getValueInteger();
-        if (id != null) {
-            modalidadeService.delete(id.intValue());
+        if (id == null) {
+            return false;
         }
-        setRedirect(ModalidadeViewPage.class);
+        try {
+            modalidadeService.delete(id);
+            // PRG + flash de sessão: a mensagem de êxito sobrevive ao
+            // redirect e é exibida uma única vez (o F5 não repete nem a
+            // exclusão nem a mensagem).
+            avisarExclusaoConcluida();
+            setRedirect(ModalidadeViewPage.class);
+        } catch (IllegalStateException ex) {
+            // Modalidade com procedimentos/sessões vinculadas: avisa via
+            // flash e volta à listagem (PRG), em vez de estourar a error page.
+            avisar(ex.getMessage());
+            setRedirect(ModalidadeViewPage.class);
+        }
         return false;
+    }
+
+    @Override
+    protected String getMensagemExclusao() {
+        return "Modalidade excluída com êxito.";
     }
 }

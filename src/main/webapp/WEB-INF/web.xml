@@ -26,4 +26,12 @@
     <welcome-file-list>
         <welcome-file>home.htm</welcome-file>
     </welcome-file-list>
+
+    <!-- Jetty 12 (ee8 webdefault) mapeia svg como "image/svg"; navegadores
+         recusam esse MIME para <img> (exige image/svg+xml) — os ícones da
+         coluna Ações quebram. Sobreposição no nível do app. -->
+    <mime-mapping>
+        <extension>svg</extension>
+        <mime-type>image/svg+xml</mime-type>
+    </mime-mapping>
 </web-app>

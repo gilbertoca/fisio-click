@@ -44,3 +44,50 @@
     </form>
 </div>
 #end
+
+#**
+ * Diálogo de confirmação de exclusão das listagens: <dialog> nativo do HTML
+ * (o Bahunya estiliza) + grampo mínimo de JavaScript que intercepta o clique
+ * na ActionLink (onDeleteClick, registrado em deleteLink.setAttribute),
+ * guarda o href e navega só na confirmação. Centralizado aqui: qualquer
+ * ajuste de markup muda em um lugar só. Uso:
+ *   #renderDialogExclusao("Tem certeza que quer excluir esse registro? Essa ação não poderá ser desfeita.")
+ *#
+#macro(renderDialogExclusao $pergunta)
+<dialog id="deleteDialog">
+    <article>
+        <header><strong>Confirme a exclusão</strong></header>
+        <p>$pergunta</p>
+        <footer>
+            <button id="deleteCancel" type="button">Cancelar</button>
+            <button id="deleteConfirm" type="button">Excluir</button>
+        </footer>
+    </article>
+</dialog>
+<script>
+    (function () {
+        var dialog = document.getElementById('deleteDialog');
+        var pendingHref = null;
+
+        // Intercepta o clique na ActionLink, guarda o href e abre o diálogo.
+        window.onDeleteClick = function (link) {
+            pendingHref = link.href;
+            dialog.showModal();
+            return false;
+        };
+
+        document.getElementById('deleteCancel').addEventListener('click', function () {
+            pendingHref = null;
+            dialog.close();
+        });
+
+        // Confirmar: navega para a URL original da ActionLink.
+        document.getElementById('deleteConfirm').addEventListener('click', function () {
+            if (pendingHref) {
+                window.location.href = pendingHref;
+            }
+            dialog.close();
+        });
+    })();
+</script>
+#end

@@ -41,6 +41,10 @@ public class ProcedimentoEditPage extends BorderPage {
     public ProcedimentoEditPage() {
         form.setNoLayout(true);
 
+        // Foco no primeiro campo ao abrir (Field.setFocus renderiza o
+        // atributo nativo autofocus — sem JavaScript).
+        nome.setFocus(true);
+
         form.add(idField);
         form.add(nome);
         form.add(codigoTuss);

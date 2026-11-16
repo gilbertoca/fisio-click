@@ -22,6 +22,7 @@ public class LoginPage extends BorderPage {
 
     public LoginPage() {
         form.setNoLayout(true);
+        username.setFocus(true);
         form.add(username);
         form.add(password);
         form.add(new Submit("login", "Sign in", this, "onLogin"));

@@ -50,6 +50,23 @@ public class ProcedimentoService {
     }
 
     /**
+     * Catálogo completo de UMA modalidade (todos os estados — ATIVO e
+     * INATIVO), ordem do catálogo. Painel da modalidade
+     * (ModalidadeProcedimentoViewPage). Query sem join: a amarra é a própria
+     * modalidade em foco.
+     */
+    public List<Procedimento> getByModalidade(Integer modalidadeId) {
+        if (modalidadeId == null) {
+            return List.of();
+        }
+        try (Connection conn = DataSourceManager.getSql2o().open()) {
+            return conn.createQuery(QueryLoader.get("procedimento.getByModalidade"))
+                    .addParameter("modalidadeId", modalidadeId)
+                    .executeAndFetch(Procedimento.class);
+        }
+    }
+
+    /**
      * LEFT JOIN opcional: o Sql2o instancia o grafo da modalidade mesmo com
      * todas as colunas null (stub com id null). Procedimento de uso geral
      * fica SEM amarra — normaliza o stub de volta para null.

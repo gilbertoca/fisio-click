@@ -8,17 +8,18 @@
     <!-- Css via CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kimeiga/bahunya/dist/bahunya.min.css">
     <!-- Application overrides (v= cache-buster: incrementar ao alterar o CSS) -->
-    <link rel="stylesheet" href="$context/assets/app.css?v=11">
+    <link rel="stylesheet" href="$context/assets/app.css?v=12">
 
     $headElements
 </head>
 <body>
     <header>
         <nav>
+            <!-- Lista única: a marca como primeiro item, o menu emendado na
+                 mesma <ul>. Dois <ul> lado a lado fazia "Fisio" colar no
+                 primeiro item do menu (sem respiro entre as listas). -->
             <ul>
                 <li><strong>Fisio</strong></li>
-            </ul>
-            <ul>
                 #parse("/WEB-INF/velocity/macro.vm")
                 #renderMenu($rootMenu)
             </ul>

@@ -113,6 +113,20 @@ table#table input[type="text"] {
     box-sizing: border-box;
 }
 
+/* Ações como ícone: os links de ação da Table (AbstractLink.setImageSrc)
+   renderizam só <img> com tooltip nativo (title). Calibra tamanho e
+   alinhamento; o link desativado (<span class="disabled">) não recebe
+   estilo do tema, então o ícone dele é atenuado aqui. */
+table#table img {
+    width: 1.1rem;
+    height: auto;
+    vertical-align: middle;
+}
+
+table#table span.disabled img {
+    opacity: .35;
+}
+
 /* Card: quadro genérico da linguagem visual (ficha, listagem, formulário) —
    o card É o divisor da página: um por unidade de conteúdo, título fora,
    nunca aninhado. Mesma gramática do .painel-acao, sem fundo. */

@@ -26,8 +26,8 @@ public class ProfissionalViewPage extends BorderPage {
     private final ProfissionalService profissionalService = new ProfissionalService();
     private Form form = new Form("formTable");
     private Table table = new Table("table");
-    private PageLink editLink = new PageLink("edit", "Edit", ProfissionalEditPage.class);
-    private ActionLink deleteLink = new ActionLink("delete", "Delete", this, "onDelete");
+    private PageLink editLink = new PageLink("edit", "Editar", ProfissionalEditPage.class);
+    private ActionLink deleteLink = new ActionLink("delete", "Excluir", this, "onDelete");
     /** Painel do profissional: ficha + sessões dele (agendadas/atendidas). */
     private PageLink viewLink = new PageLink("view", "Visualizar", ProfissionalSessaoViewPage.class);
 
@@ -37,23 +37,35 @@ public class ProfissionalViewPage extends BorderPage {
         table.setSortable(true);
         table.setPaginator(new TablePaginator(table));
 
-        Column nomeCol = new Column("nome");
+        Column nomeCol = new Column("nome", "Nome Completo");
         nomeCol.setSortable(true);
         nomeCol.setFilterBy("nome");
         table.addColumn(nomeCol);
 
-        Column registroCol = new Column("registroNumero");
+        Column registroCol = new Column("registroNumero", "Registro");
         registroCol.setSortable(true);
         table.addColumn(registroCol);
 
-        table.addColumn(new Column("telefone"));
+        table.addColumn(new Column("telefone", "Telefone"));
 
         Column actionsCol = new Column("actions", "Ações");
+        // Sem propriedade "actions": ordenar por esta coluna estouraria no
+        // PropertyService. Padrão do EditTable canônico: ações nunca ordenável.
+        actionsCol.setSortable(false);
         AbstractLink[] links = new AbstractLink[] { viewLink, editLink, deleteLink };
         actionsCol.setDecorator(new LinkDecorator(table, links, "id"));
         table.addColumn(actionsCol);
 
         deleteLink.setAttribute("onclick", "return onDeleteClick(this);");
+
+        // Ações como ícone + tooltip nativo (title) — modo "só imagem" do
+        // AbstractLink; asset nosso em assets/images.
+        viewLink.setImageSrc("/assets/images/visualizar.svg");
+        viewLink.setTitle("Visualizar");
+        editLink.setImageSrc("/assets/images/editar.svg");
+        editLink.setTitle("Editar");
+        deleteLink.setImageSrc("/assets/images/excluir.svg");
+        deleteLink.setTitle("Excluir");
 
         table.setDataProvider(new DataProvider<Profissional>() {
             @Override
@@ -67,7 +79,6 @@ public class ProfissionalViewPage extends BorderPage {
         addControl(editLink);
         addControl(deleteLink);
         addControl(viewLink);
-        addControl(table);
         addControl(form);
     }
 
@@ -80,10 +91,28 @@ public class ProfissionalViewPage extends BorderPage {
     /** Invoked by the ActionLink after the user confirms the modal. */
     public boolean onDelete() {
         Integer id = deleteLink.getValueInteger();
-        if (id != null) {
-            profissionalService.delete(id.intValue());
+        if (id == null) {
+            return false;
         }
-        setRedirect(ProfissionalViewPage.class);
+        try {
+            profissionalService.delete(id);
+            // PRG + flash de sessão: a mensagem de êxito sobrevive ao
+            // redirect e é exibida uma única vez (o F5 não repete nem a
+            // exclusão nem a mensagem).
+            avisarExclusaoConcluida();
+            setRedirect(ProfissionalViewPage.class);
+        } catch (IllegalStateException ex) {
+            // Profissional com sessões vinculadas: o histórico da agenda não
+            // é apagável — avisa via flash e volta à listagem (PRG), em vez
+            // de estourar a error page.
+            avisar(ex.getMessage());
+            setRedirect(ProfissionalViewPage.class);
+        }
         return false;
+    }
+
+    @Override
+    protected String getMensagemExclusao() {
+        return "Profissional excluído com êxito.";
     }
 }

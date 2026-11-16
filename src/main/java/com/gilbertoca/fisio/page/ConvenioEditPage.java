@@ -24,6 +24,9 @@ public class ConvenioEditPage extends BorderPage {
         form.setNoLayout(true);
 
         nome = new TextField("nome", "Nome do Convênio:", true);
+        // Foco no primeiro campo ao abrir (Field.setFocus renderiza o
+        // atributo nativo autofocus — sem JavaScript).
+        nome.setFocus(true);
         cnpj = new TextField("cnpj", "CNPJ (Somente Números):", true);
         endereco = new TextField("endereco", "Endereço:", false);
         bairro = new TextField("bairro", "Bairro:", false);

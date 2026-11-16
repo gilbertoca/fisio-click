@@ -35,9 +35,24 @@ public class ProfissionalService {
         }
     }
 
+    /**
+     * Guard de deleção na MESMA transação do DELETE (mesmo princípio de
+     * ProcedimentoService.delete): profissional com sessões na agenda não é
+     * apagável.
+     */
     public void delete(Integer id) {
-        try (Connection conn = DataSourceManager.getSql2o().open()) {
-            conn.createQuery(QueryLoader.get("profissional.delete")).addParameter("id", id).executeUpdate();
+        try (Connection conn = DataSourceManager.getSql2o().beginTransaction()) {
+            Long dependentes = conn.createQuery(QueryLoader.get("profissional.countDependentes"))
+                    .addParameter("id", id)
+                    .executeScalar(Long.class);
+            if (dependentes != null && dependentes > 0) {
+                throw new IllegalStateException(
+                        "Profissional não pode ser excluído: existem sessões vinculadas a ele.");
+            }
+            conn.createQuery(QueryLoader.get("profissional.delete"))
+                    .addParameter("id", id)
+                    .executeUpdate();
+            conn.commit();
         }
     }
 

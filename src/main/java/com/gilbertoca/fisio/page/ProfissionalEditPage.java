@@ -26,6 +26,9 @@ public class ProfissionalEditPage extends BorderPage {
         form.setNoLayout(true);
 
         nome = new TextField("nome", "Nome Completo:", true);
+        // Foco no primeiro campo ao abrir (Field.setFocus renderiza o
+        // atributo nativo autofocus — sem JavaScript).
+        nome.setFocus(true);
         cpf = new TextField("cpf", "CPF (Somente Números):", true);
         dtNascimento = new LocalDateField("dtNascimento", "Data de Nascimento:", true);
         email = new TextField("email", "Email:", false);

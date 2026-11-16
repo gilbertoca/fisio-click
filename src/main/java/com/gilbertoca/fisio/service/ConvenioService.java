@@ -34,9 +34,24 @@ public class ConvenioService {
         }
     }
 
+    /**
+     * Guard de deleção na MESMA transação do DELETE (mesmo princípio de
+     * ProcedimentoService.delete): convênio com clientes amarrados (FK
+     * restritiva) ou faturamentos (lote) vinculados não é apagável.
+     */
     public void delete(Integer id) {
-        try (Connection conn = DataSourceManager.getSql2o().open()) {
-            conn.createQuery(QueryLoader.get("convenio.delete")).addParameter("id", id).executeUpdate();
+        try (Connection conn = DataSourceManager.getSql2o().beginTransaction()) {
+            Long dependentes = conn.createQuery(QueryLoader.get("convenio.countDependentes"))
+                    .addParameter("id", id)
+                    .executeScalar(Long.class);
+            if (dependentes != null && dependentes > 0) {
+                throw new IllegalStateException(
+                        "Convênio não pode ser excluído: existem clientes ou faturamentos vinculados a ele.");
+            }
+            conn.createQuery(QueryLoader.get("convenio.delete"))
+                    .addParameter("id", id)
+                    .executeUpdate();
+            conn.commit();
         }
     }
 

@@ -66,9 +66,24 @@ public class ClienteService {
         }
     }
 
+    /**
+     * Guard de deleção na MESMA transação do DELETE (mesmo princípio de
+     * ProcedimentoService.delete): cliente com sessões (histórico da agenda)
+     * ou faturamentos vinculados não é apagável.
+     */
     public void delete(Integer id) {
-        try (Connection conn = DataSourceManager.getSql2o().open()) {
-            conn.createQuery(QueryLoader.get("cliente.delete")).addParameter("id", id).executeUpdate();
+        try (Connection conn = DataSourceManager.getSql2o().beginTransaction()) {
+            Long dependentes = conn.createQuery(QueryLoader.get("cliente.countDependentes"))
+                    .addParameter("id", id)
+                    .executeScalar(Long.class);
+            if (dependentes != null && dependentes > 0) {
+                throw new IllegalStateException(
+                        "Cliente não pode ser excluído: existem sessões ou faturamentos vinculados a ele.");
+            }
+            conn.createQuery(QueryLoader.get("cliente.delete"))
+                    .addParameter("id", id)
+                    .executeUpdate();
+            conn.commit();
         }
     }
 

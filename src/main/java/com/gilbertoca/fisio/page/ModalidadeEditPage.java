@@ -22,6 +22,9 @@ public class ModalidadeEditPage extends BorderPage {
         form.setNoLayout(true);
 
         nome = new TextField("nome", "Nome da Modalidade:", true);
+        // Foco no primeiro campo ao abrir (Field.setFocus renderiza o
+        // atributo nativo autofocus — sem JavaScript).
+        nome.setFocus(true);
         duracaoMinutos = new TextField("duracaoMinutos", "Duração (Minutos):", true);
         valorBase = new TextField("valorBase", "Valor Base (R$):", true);
         capacidadeSimultanea = new TextField("capacidadeSimultanea", "Capacidade Simultânea (fisio: 1, pilates: 4):", true);
