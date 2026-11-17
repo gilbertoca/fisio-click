@@ -20,7 +20,7 @@ import com.gilbertoca.fisio.service.ModalidadeService;
  * (getAllLikeNome(filters.get("nome")) pattern). Ação Visualizar abre o
  * painel da modalidade (ficha + catálogo de procedimentos amarrados).
  */
-public class ModalidadeViewPage extends BorderPage {
+public class ModalidadeViewPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

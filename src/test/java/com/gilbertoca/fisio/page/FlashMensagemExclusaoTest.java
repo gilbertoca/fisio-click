@@ -1,6 +1,7 @@
 package com.gilbertoca.fisio.page;
 
 import com.gilbertoca.fisio.infra.DataSourceManager;
+import com.gilbertoca.fisio.model.Usuario;
 import org.apache.click.MockContainer;
 import org.apache.click.servlet.MockRequest;
 import org.junit.AfterClass;
@@ -33,6 +34,13 @@ public class FlashMensagemExclusaoTest {
 
         container = new MockContainer("src/main/webapp");
         container.start();
+
+        // Usuário autenticado na sessão persistente do container — o gate
+        // de AuthenticatedPage (onSecurityCheck) exige o SESSION_USER.
+        Usuario usuarioTeste = new Usuario();
+        usuarioTeste.setId(1);
+        usuarioTeste.setUsername("admin");
+        container.getSession().setAttribute(AuthenticatedPage.SESSION_USER, usuarioTeste);
 
         seedCenario();
     }

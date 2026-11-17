@@ -47,8 +47,8 @@ public abstract class BorderPage extends Page {
                 && ctx.getSessionAttribute(AuthenticatedPage.SESSION_USER) != null;
         addModel("authenticated", Boolean.valueOf(authenticated));
 
-        Menu authMenu = new Menu(authenticated ? "Log out" : "Log in");
-        authMenu.setPath(authenticated ? "login.htm?action=logout" : "login.htm");
+        Menu authMenu = new Menu(authenticated ? "Sair" : "Entrar");
+        authMenu.setPath(authenticated ? "logout.htm" : "login.htm");
         authMenu.setImageSrc("/assets/images/user.svg"); // ícone do menu de autenticação
         rootMenu.add(authMenu);
         addControl(rootMenu);

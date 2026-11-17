@@ -1,6 +1,7 @@
 package com.gilbertoca.fisio.page;
 
 import com.gilbertoca.fisio.infra.DataSourceManager;
+import com.gilbertoca.fisio.model.Usuario;
 import org.apache.click.MockContainer;
 import org.apache.click.servlet.MockRequest;
 import org.junit.AfterClass;
@@ -31,6 +32,13 @@ public class ClienteSessaoViewPageTest {
 
         container = new MockContainer("src/main/webapp");
         container.start();
+
+        // Usuário autenticado na sessão persistente do container — o gate
+        // de AuthenticatedPage (onSecurityCheck) exige o SESSION_USER.
+        Usuario usuarioTeste = new Usuario();
+        usuarioTeste.setId(1);
+        usuarioTeste.setUsername("admin");
+        container.getSession().setAttribute(AuthenticatedPage.SESSION_USER, usuarioTeste);
 
         seedCenario();
     }
@@ -86,6 +94,7 @@ public class ClienteSessaoViewPageTest {
     @Test
     public void deveExibirFichaESessoesDoClienteNoGet() {
         MockRequest request = new MockRequest();
+        request.setSession(container.getSession());
         request.setMethod("GET");
         request.setParameter("id", clienteId.toString());
         container.setRequest(request);
@@ -115,6 +124,7 @@ public class ClienteSessaoViewPageTest {
     @Test
     public void deveRedirecionarAoListarSemId() {
         MockRequest request = new MockRequest();
+        request.setSession(container.getSession());
         request.setMethod("GET");
         container.setRequest(request);
 
@@ -128,6 +138,7 @@ public class ClienteSessaoViewPageTest {
     @Test
     public void deveListarAcaoVisualizarNaListagemDeClientes() {
         MockRequest request = new MockRequest();
+        request.setSession(container.getSession());
         request.setMethod("GET");
         container.setRequest(request);
 

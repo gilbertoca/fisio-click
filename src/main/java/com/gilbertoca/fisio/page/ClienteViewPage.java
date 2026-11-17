@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Cliente view page.
  */
-public class ClienteViewPage extends BorderPage {
+public class ClienteViewPage extends AuthenticatedPage {
 
     private final ClienteService clienteService = new ClienteService();
     private Form form = new Form("formTable");

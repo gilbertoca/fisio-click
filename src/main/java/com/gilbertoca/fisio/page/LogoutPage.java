@@ -1,7 +1,8 @@
 package com.gilbertoca.fisio.page;
 
 /**
- * Logs the user out, clears the session, and redirects to the home page.
+ * Encerra a sessão (logout) e volta para a tela de entrada. O menu do
+ * BorderPage aponta para logout.htm quando há usuário autenticado.
  */
 public class LogoutPage extends BorderPage {
 
@@ -9,6 +10,6 @@ public class LogoutPage extends BorderPage {
     public void onInit() {
         super.onInit();
         getContext().getSession().invalidate();
-        setRedirect(HomePage.class);
+        setRedirect(LoginPage.class);
     }
 }

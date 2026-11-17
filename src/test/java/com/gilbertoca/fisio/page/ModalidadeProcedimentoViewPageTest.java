@@ -1,6 +1,7 @@
 package com.gilbertoca.fisio.page;
 
 import com.gilbertoca.fisio.infra.DataSourceManager;
+import com.gilbertoca.fisio.model.Usuario;
 import org.apache.click.MockContainer;
 import org.apache.click.servlet.MockRequest;
 import org.junit.AfterClass;
@@ -32,6 +33,13 @@ public class ModalidadeProcedimentoViewPageTest {
 
         container = new MockContainer("src/main/webapp");
         container.start();
+
+        // Usuário autenticado na sessão persistente do container — o gate
+        // de AuthenticatedPage (onSecurityCheck) exige o SESSION_USER.
+        Usuario usuarioTeste = new Usuario();
+        usuarioTeste.setId(1);
+        usuarioTeste.setUsername("admin");
+        container.getSession().setAttribute(AuthenticatedPage.SESSION_USER, usuarioTeste);
 
         seedCenario();
     }
@@ -74,6 +82,7 @@ public class ModalidadeProcedimentoViewPageTest {
     @Test
     public void deveExibirFichaECatalogoDaModalidadeNoGet() {
         MockRequest request = new MockRequest();
+        request.setSession(container.getSession());
         request.setMethod("GET");
         request.setParameter("id", modalidadeId.toString());
         container.setRequest(request);
@@ -107,6 +116,7 @@ public class ModalidadeProcedimentoViewPageTest {
     @Test
     public void deveRedirecionarAoListarSemId() {
         MockRequest request = new MockRequest();
+        request.setSession(container.getSession());
         request.setMethod("GET");
         container.setRequest(request);
 
@@ -120,6 +130,7 @@ public class ModalidadeProcedimentoViewPageTest {
     @Test
     public void deveListarAcaoVisualizarNaListagemDeModalidades() {
         MockRequest request = new MockRequest();
+        request.setSession(container.getSession());
         request.setMethod("GET");
         container.setRequest(request);
 

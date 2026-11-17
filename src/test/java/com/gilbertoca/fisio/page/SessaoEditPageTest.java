@@ -2,6 +2,7 @@ package com.gilbertoca.fisio.page;
 
 import org.apache.click.MockContainer;
 import com.gilbertoca.fisio.infra.DataSourceManager;
+import com.gilbertoca.fisio.model.Usuario;
 import com.gilbertoca.fisio.model.Sessao;
 import com.gilbertoca.fisio.service.SessaoService;
 import org.junit.AfterClass;
@@ -47,6 +48,13 @@ public class SessaoEditPageTest {
     @Test
     public void shouldProcessFormSubmitAndRedirectOnValidAgendaBooking() {
         container.start();
+
+        // Usuário autenticado na sessão persistente do container — o gate
+        // de AuthenticatedPage (onSecurityCheck) exige o SESSION_USER.
+        Usuario usuarioTeste = new Usuario();
+        usuarioTeste.setId(1);
+        usuarioTeste.setUsername("admin");
+        container.getSession().setAttribute(AuthenticatedPage.SESSION_USER, usuarioTeste);
 
         SessaoEditPage page = container.testPage(SessaoEditPage.class);
         

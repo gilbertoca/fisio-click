@@ -5,7 +5,7 @@ import com.gilbertoca.fisio.service.ConvenioService;
 import org.apache.click.control.*;
 import org.apache.click.util.Bindable;
 
-public class ConvenioEditPage extends BorderPage {
+public class ConvenioEditPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

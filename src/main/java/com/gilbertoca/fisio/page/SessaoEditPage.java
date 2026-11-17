@@ -27,7 +27,7 @@ import org.apache.click.util.Bindable;
  * Monta o grafo Sessao -> Cliente/Profissional/Modalidade e persiste via
  * SessaoService, que garante a verificação transacional de conflito de agenda.
  */
-public class SessaoEditPage extends BorderPage {
+public class SessaoEditPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

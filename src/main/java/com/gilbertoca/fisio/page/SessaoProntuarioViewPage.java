@@ -39,7 +39,7 @@ import org.apache.click.util.HtmlStringBuffer;
  * sessões em atendimento ou realizadas têm registro clínico associado; a
  * recepção lida com cancelamento/estorno na agenda (SessaoViewPage).
  */
-public class SessaoProntuarioViewPage extends BorderPage {
+public class SessaoProntuarioViewPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

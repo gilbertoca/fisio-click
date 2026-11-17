@@ -32,7 +32,7 @@ import org.apache.click.util.HtmlStringBuffer;
  * via AbstractLink.setDisabled (renderizam <span class="disabled">) — ver
  * aplicavel().
  */
-public class SessaoViewPage extends BorderPage {
+public class SessaoViewPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

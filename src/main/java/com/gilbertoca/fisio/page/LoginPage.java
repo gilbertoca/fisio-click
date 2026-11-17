@@ -1,5 +1,6 @@
 package com.gilbertoca.fisio.page;
 
+import com.gilbertoca.fisio.model.Usuario;
 import com.gilbertoca.fisio.service.AuthService;
 import org.apache.click.control.Form;
 import org.apache.click.control.PasswordField;
@@ -8,15 +9,17 @@ import org.apache.click.control.TextField;
 import org.apache.click.util.Bindable;
 
 /**
- * Login page.
+ * Tela de entrada (módulo de segurança). Autentica contra fisio.usuario
+ * (senha PBKDF2 + salt) e guarda o objeto Usuario na sessão — é ele que
+ * autoriza as páginas (AuthenticatedPage) e, na Fase 3, as permissões.
  */
 public class LoginPage extends BorderPage {
 
     private final AuthService authService = new AuthService();
 
     private Form form = new Form("form");
-    private TextField username = new TextField("username", "Username", true);
-    private PasswordField password = new PasswordField("password", "Password", true);
+    private TextField username = new TextField("username", "Usuário", true);
+    private PasswordField password = new PasswordField("password", "Senha", true);
     @Bindable
     protected String action;
 
@@ -25,35 +28,35 @@ public class LoginPage extends BorderPage {
         username.setFocus(true);
         form.add(username);
         form.add(password);
-        form.add(new Submit("login", "Sign in", this, "onLogin"));
+        form.add(new Submit("login", "Entrar", this, "onLogin"));
         addControl(form);
     }
 
     @Override
     public void onInit() {
         super.onInit();
-        addModel("title", "Sign in · Click + Bahunya Demo");
+        addModel("title", "Entrar · Fisio");
     }
 
     public boolean onLogin() {
         if (form.isValid()) {
-            if (authService.authenticate(username.getValue(), password.getValue())) {
-                getContext().setSessionAttribute(AuthenticatedPage.SESSION_USER, username.getValue());
+            Usuario usuario = authService.authenticate(username.getValue(), password.getValue());
+            if (usuario != null) {
+                getContext().setSessionAttribute(AuthenticatedPage.SESSION_USER, usuario);
                 setRedirect(HomePage.class);
                 return false;
-            } else {
-                form.setError("Invalid username or password");
             }
+            form.setError("Usuário ou senha inválidos.");
         }
         return true;
     }
 
     @Override
     public void onGet() {
-        // Se veio com ?action=logout, desloga e redireciona
+        // ?action=logout: desloga e volta para a própria tela de entrada
         if ("logout".equals(action)) {
             getContext().getSession().invalidate();
-            setRedirect(HomePage.class);
+            setRedirect(LoginPage.class);
         }
     }
 }

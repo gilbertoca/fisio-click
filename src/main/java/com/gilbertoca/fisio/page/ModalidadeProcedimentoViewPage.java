@@ -30,7 +30,7 @@ import org.apache.click.util.Bindable;
  * Coluna de ações: Editar o procedimento (a edição vive na listagem de
  * procedimentos — o painel só apresenta o catálogo da modalidade).
  */
-public class ModalidadeProcedimentoViewPage extends BorderPage {
+public class ModalidadeProcedimentoViewPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

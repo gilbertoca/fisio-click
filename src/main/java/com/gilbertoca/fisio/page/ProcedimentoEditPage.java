@@ -21,7 +21,7 @@ import org.apache.click.util.Bindable;
  * por id/name, o copyFrom casaria o campo "modalidade" com a propriedade do
  * grafo e produziria toString no select.
  */
-public class ProcedimentoEditPage extends BorderPage {
+public class ProcedimentoEditPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

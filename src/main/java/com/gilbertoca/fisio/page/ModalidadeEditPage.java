@@ -5,7 +5,7 @@ import com.gilbertoca.fisio.service.ModalidadeService;
 import org.apache.click.control.*;
 import org.apache.click.util.Bindable;
 
-public class ModalidadeEditPage extends BorderPage {
+public class ModalidadeEditPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

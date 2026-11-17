@@ -19,7 +19,7 @@ import com.gilbertoca.fisio.service.ConvenioService;
  * Convênio view page. Filtro por nome na tabela, encaminhado ao service
  * (clienteService.getAllLikeNome(filters.get("nome")) pattern).
  */
-public class ConvenioViewPage extends BorderPage {
+public class ConvenioViewPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

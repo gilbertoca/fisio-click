@@ -108,7 +108,7 @@ import org.apache.click.util.Bindable;
  * POST forjado despacharia o handler, mas o guard do service rejeitaria a
  * transição ilegal.
  */
-public class SessaoProntuarioEditPage extends BorderPage {
+public class SessaoProntuarioEditPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

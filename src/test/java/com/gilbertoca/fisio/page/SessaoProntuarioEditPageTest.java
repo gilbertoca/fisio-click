@@ -1,6 +1,7 @@
 package com.gilbertoca.fisio.page;
 
 import com.gilbertoca.fisio.infra.DataSourceManager;
+import com.gilbertoca.fisio.model.Usuario;
 import com.gilbertoca.fisio.model.Modalidade;
 import com.gilbertoca.fisio.model.Procedimento;
 import com.gilbertoca.fisio.model.SessaoProcedimento;
@@ -38,6 +39,13 @@ public class SessaoProntuarioEditPageTest {
 
         container = new MockContainer("src/main/webapp");
         container.start();
+
+        // Usuário autenticado na sessão persistente do container — o gate
+        // de AuthenticatedPage (onSecurityCheck) exige o SESSION_USER.
+        Usuario usuarioTeste = new Usuario();
+        usuarioTeste.setId(1);
+        usuarioTeste.setUsername("admin");
+        container.getSession().setAttribute(AuthenticatedPage.SESSION_USER, usuarioTeste);
 
         seedCenario();
     }
@@ -102,7 +110,9 @@ public class SessaoProntuarioEditPageTest {
     public void devePersistirCondutasMarcadasNoPostDoSalvar() {
         ProcedimentoService service = new ProcedimentoService();
 
-        MockRequest request = new MockRequest(); // method default: POST
+        MockRequest request = new MockRequest();
+        request.setSession(container.getSession()); // method default: POST
+        request.setSession(container.getSession());
         request.setParameter("id", sessaoId.toString());
         request.setParameter("registroConduta", "Conduta textual do registro.");
         request.setParameter("condutas", new String[]{
@@ -130,6 +140,7 @@ public class SessaoProntuarioEditPageTest {
         service.adicionarProcedimento(sessaoId, procedimentoBId, null);
 
         MockRequest request = new MockRequest();
+        request.setSession(container.getSession());
         request.setMethod("GET");
         request.setParameter("id", sessaoId.toString());
         request.setParameter("editar", "true");

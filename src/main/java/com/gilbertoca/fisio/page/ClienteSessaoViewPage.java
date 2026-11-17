@@ -32,7 +32,7 @@ import org.apache.click.util.Bindable;
  * se adapta ao estado da sessão: painel de conferência (AGENDADA), registro
  * em edição (EM_ANDAMENTO) ou histórico readonly (terminais).
  */
-public class ClienteSessaoViewPage extends BorderPage {
+public class ClienteSessaoViewPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

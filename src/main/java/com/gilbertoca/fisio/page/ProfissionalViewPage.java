@@ -19,7 +19,7 @@ import com.gilbertoca.fisio.service.ProfissionalService;
  * Profissional view page. Filtro por nome na tabela, encaminhado ao service
  * (clienteService.getAllLikeNome(filters.get("nome")) pattern).
  */
-public class ProfissionalViewPage extends BorderPage {
+public class ProfissionalViewPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

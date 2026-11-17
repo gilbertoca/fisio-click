@@ -6,7 +6,7 @@ import org.apache.click.control.*;
 import org.apache.click.extras.control.LocalDateField;
 import org.apache.click.util.Bindable;
 
-public class ProfissionalEditPage extends BorderPage {
+public class ProfissionalEditPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 

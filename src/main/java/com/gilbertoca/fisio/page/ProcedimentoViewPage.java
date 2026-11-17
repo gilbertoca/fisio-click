@@ -21,7 +21,7 @@ import org.apache.click.extras.control.LinkDecorator;
  * histórico do atendimento e não sai do catálogo — o service bloqueia
  * (IllegalStateException) e a página avisa em $mensagem, sem error page.
  */
-public class ProcedimentoViewPage extends BorderPage {
+public class ProcedimentoViewPage extends AuthenticatedPage {
 
     private static final long serialVersionUID = 1L;
 
