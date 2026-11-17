@@ -157,13 +157,22 @@ public class SessaoViewPage extends AuthenticatedPage {
             return fila;
         }
         if (link == deleteLink) {
-            return situacao == SessaoSituacao.AGENDADA;
+            // Estado da linha E permissão: sem sessao:excluir, o Excluir
+            // fica desabilitado para todas as linhas (cinza, sem href).
+            return situacao == SessaoSituacao.AGENDADA && temPermissao("sessao:excluir");
         }
         return false;
     }
 
     /** Invoked by the ActionLink after the user confirms the modal. */
     public boolean onDelete() {
+        // Enforca-se no servidor: ocultar/desabilitar o link não protege
+        // contra URL forjada (actionLink=delete).
+        if (!temPermissao("sessao:excluir")) {
+            avisar("Você não tem permissão para excluir agendamentos.");
+            setRedirect(SessaoViewPage.class);
+            return false;
+        }
         Integer id = deleteLink.getValueInteger();
         if (id == null) {
             return false;
@@ -188,5 +197,14 @@ public class SessaoViewPage extends AuthenticatedPage {
     @Override
     protected String getMensagemExclusao() {
         return "Agendamento excluído com êxito.";
+    }
+
+    /**
+     * Permissões exigidas (AuthenticatedPage, any-of) — Fase 3: o gate de
+     * acesso à página segue a matriz de permissões do módulo de segurança.
+     */
+    @Override
+    protected String[] permissoesExigidas() {
+        return new String[] { "sessao:visualizar" };
     }
 }

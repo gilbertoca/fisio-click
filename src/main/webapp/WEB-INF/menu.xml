@@ -1,15 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- roles= é o recurso que o PermissaoAccessController verifica (modulo:acao).
+     Item sem roles = público (contrato do AccessController). -->
 <menu>
-    <menu name="home"      label="Home"      path="home.htm"/>
-    <menu name="agenda" label="Agenda" path="sessao-view.htm"/>
-    <menu name="atendimento" label="Atendimento" path="sessao-prontuario-view.htm"/>
-    <menu name="clientes" label="Clientes" path="cliente-view.htm"/>
-    <menu name="profissionais" label="Profissionais" path="profissional-view.htm"/>
-    <menu name="convenios" label="Convênios" path="convenio-view.htm"/>
-    <menu name="modalidades" label="Modalidades" path="modalidade-view.htm"/>
-    <menu name="procedimentos" label="Procedimentos" path="procedimento-view.htm"/>
-    <menu name="config" label="⚙ Configurações">
-        <menu name="usuarios" label="Usuários" path="/usuarios.htm"/>
-        <menu name="permissoes" label="Permissões" path="/permissoes.htm"/>
+    <menu name="home"           label="Home"          path="home.htm"/>
+    <menu name="agenda"         label="Agenda"        path="sessao-view.htm"           roles="sessao:visualizar"/>
+    <menu name="atendimento"    label="Atendimento"   path="sessao-prontuario-view.htm" roles="sessao:atender"/>
+    <menu name="clientes"       label="Clientes"      path="cliente-view.htm"          roles="cliente:visualizar"/>
+    <menu name="profissionais"  label="Profissionais" path="profissional-view.htm"     roles="profissional:visualizar"/>
+    <menu name="convenios"      label="Convênios"     path="convenio-view.htm"         roles="convenio:visualizar"/>
+    <menu name="modalidades"    label="Modalidades"   path="modalidade-view.htm"       roles="modalidade:visualizar"/>
+    <menu name="procedimentos"  label="Procedimentos" path="procedimento-view.htm"     roles="procedimento:visualizar"/>
+    <!-- O pai também exige permissão (recurso null = público no contrato do
+         AccessController): sem roles=, "Configurações" apareceria para todos,
+         com os filhos filtrados. Com roles=, o submenu some inteiro. -->
+    <menu name="config" label="⚙ Configurações" roles="usuario:visualizar">
+        <menu name="usuarios"   label="Usuários"     path="usuario-view.htm"              roles="usuario:visualizar"/>
+        <menu name="conectados" label="Conectados"    path="usuario-conectado-view.htm"    roles="usuario:visualizar"/>
     </menu>
 </menu>

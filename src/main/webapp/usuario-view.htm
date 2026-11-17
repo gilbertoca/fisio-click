@@ -1,0 +1,22 @@
+<article id="usuario-view">
+    <h1>Listagem de Usuários</h1>
+
+    ## Card da listagem: no cabeçalho, Conectados (tela de sessões abertas)
+    ## e Adicionar — dois forms GET nativos, como o macro renderBotaoNovo
+    ## (a faixa perde a própria borda via .card .painel-acao).
+    ## Cabeçalho do card no padrão CredBem: Conectados na ponta esquerda,
+    ## Novo usuário na ponta direita. O .painel-acao é flex com
+    ## justify-content: flex-end (app.css intocável) — o space-between
+    ## entre os dois botões entra inline, com precedência sobre a regra.
+    <div class="card">
+        <div class="painel-acao" style="justify-content: space-between;">
+            <form method="get" action="$context/usuario-conectado-view.htm">
+                <button>Conectados</button>
+            </form>
+            <form method="get" action="$context/usuario-edit.htm">
+                <button>Novo usuário</button>
+            </form>
+        </div>
+        $formTable
+    </div>
+</article>

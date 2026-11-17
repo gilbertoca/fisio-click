@@ -65,7 +65,9 @@ footer {
 
 /* Tabela larga em tela pequena: rola DENTRO da própria tabela em vez de
    estourar a página inteira (display:block transforma a table num bloco
-   rolável; os quadros compactos 3x2 cabem no espaço e não ganham scrollbar) */
+   rolável; os quadros compactos 3x2 cabem no espaço e não ganham scrollbar).
+   A #table NÃO entra aqui: ela é contida pelo form#formTable (abaixo) em
+   qualquer largura — display:block nela desmonta o leiaute tabular. */
 @media (max-width: 40rem) {
     table {
         display: block;
@@ -94,7 +96,16 @@ footer {
    o tema não impõe largura e a tabela encolhia às colunas. Os quadros
    compactos 3x2 da sala/painéis não têm id "table" e ficam como estão. */
 table#table {
+    display: table;
     width: 100%;
+}
+
+/* Janela estreita: o conteúdo mínimo da tabela (filtros, datas, ações)
+   pode passar da largura do card. O FORM que embrulha a tabela rola
+   horizontalmente DENTRO do card — a tabela nunca estoura a página,
+   em nenhuma largura (substitui o display:block por largura). */
+form#formTable {
+    overflow-x: auto;
 }
 
 /* Listagem (Table do Click, id "table"): o Bahunya deixa td/th nowrap — com

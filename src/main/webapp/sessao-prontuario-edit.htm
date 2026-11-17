@@ -3,10 +3,6 @@
         <h1>Sala de Atendimento</h1>
     </header>
 
-    #if($mensagem)
-    <p><mark>$mensagem</mark></p>
-    #end
-
     #if ($sessao && $sessao.situacao && !$editar && ($sessao.situacao.name() == "AGENDADA" || $sessao.situacao.name() == "CONFIRMADA"))
     #if($form.error)
     <p><mark>$form.error</mark></p>

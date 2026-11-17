@@ -8,7 +8,7 @@
     <!-- Css via CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kimeiga/bahunya/dist/bahunya.min.css">
     <!-- Application overrides (v= cache-buster: incrementar ao alterar o CSS) -->
-    <link rel="stylesheet" href="$context/assets/app.css?v=12">
+    <link rel="stylesheet" href="$context/assets/app.css?v=14">
 
     $headElements
 </head>
@@ -27,6 +27,14 @@
     </header>
 
     <main>
+        <!-- Canal único de mensagens flash (BorderPage.onRender): êxito de
+             exclusão, bloqueio de permissão etc. — uma exibição por mensagem,
+             o F5 não repete. Fica no border para TODA página exibir (a Home
+             também recebe avisos do gate). -->
+        #if($mensagem)
+        <p><mark>$mensagem</mark></p>
+        #end
+
         #parse($path)
     </main>
 

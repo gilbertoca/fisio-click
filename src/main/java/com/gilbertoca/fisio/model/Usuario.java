@@ -27,6 +27,8 @@ public class Usuario implements Serializable {
     private Profissional profissional;
     /** Papéis carregados pelo service (não é coluna). */
     private List<Papel> papeis = new ArrayList<>();
+    /** Nomes dos papéis agregados do banco (listagem — LISTAGG). */
+    private String nomesPapeis;
 
     public Usuario() {}
 
@@ -57,13 +59,8 @@ public class Usuario implements Serializable {
     public List<Papel> getPapeis() { return papeis; }
     public void setPapeis(List<Papel> papeis) { this.papeis = papeis; }
 
-    /** Nomes dos papéis (para exibição — "Gerente, Operador"). */
-    public String getNomesPapeis() {
-        return papeis.stream()
-                .map(Papel::getNome)
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("");
-    }
+    public String getNomesPapeis() { return nomesPapeis; }
+    public void setNomesPapeis(String nomesPapeis) { this.nomesPapeis = nomesPapeis; }
 
     @Override
     public int hashCode() {

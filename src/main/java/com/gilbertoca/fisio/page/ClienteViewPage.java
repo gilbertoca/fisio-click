@@ -90,10 +90,25 @@ public class ClienteViewPage extends AuthenticatedPage {
     public void onInit() {
         super.onInit();
         addModel("title", "Clientes View");
+
+        // Sem cliente:excluir: a ação sai da coluna (o guard do onDelete
+        // continua no servidor — a UI é só a porta de entrada).
+        if (!temPermissao("cliente:excluir")) {
+            removeControl(deleteLink);
+            Column colAcoes = table.getColumn("actions");
+            colAcoes.setDecorator(new LinkDecorator(table, new AbstractLink[] { viewLink, editLink }, "id"));
+        }
     }
 
     /** Invoked by the ActionLink after the user confirms the modal. */
     public boolean onDelete() {
+        // Enforca-se no servidor: ocultar o link não protege contra URL
+        // forjada (actionLink=delete&value=...).
+        if (!temPermissao("cliente:excluir")) {
+            avisar("Você não tem permissão para excluir registros.");
+            setRedirect(ClienteViewPage.class);
+            return false;
+        }
         Integer id = deleteLink.getValueInteger();
         if (id == null) {
             return false;
@@ -118,5 +133,14 @@ public class ClienteViewPage extends AuthenticatedPage {
     @Override
     protected String getMensagemExclusao() {
         return "Cliente excluído com êxito.";
+    }
+
+    /**
+     * Permissões exigidas (AuthenticatedPage, any-of) — Fase 3: o gate de
+     * acesso à página segue a matriz de permissões do módulo de segurança.
+     */
+    @Override
+    protected String[] permissoesExigidas() {
+        return new String[] { "cliente:visualizar" };
     }
 }

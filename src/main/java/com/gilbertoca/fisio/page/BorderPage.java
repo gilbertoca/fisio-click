@@ -33,9 +33,17 @@ public abstract class BorderPage extends Page {
      * nem ação). */
     private static final String FLASH_MENSAGEM = "flash.mensagem";
 
+    /** AccessController do menu: criado uma vez e propagado a TODOS os itens
+     * — os do menu.xml (via MenuFactory) e os construídos aqui (Entrar/Sair).
+     * Menu sem controller estoura IllegalStateException no isUserInRoles()
+     * da macro e o template renderiza pela metade. */
+    private final PermissaoAccessController menuAccessController = new PermissaoAccessController();
+
     public BorderPage() {
+        // MenuFactory propaga o AccessController a todos os menus: cada item
+        // com roles= (menu.xml) é filtrado pela permissão do usuário.
         MenuFactory menuFactory = new MenuFactory();
-        rootMenu = menuFactory.getRootMenu();
+        rootMenu = menuFactory.getRootMenu(menuAccessController);
     }
 
     @Override
@@ -50,6 +58,10 @@ public abstract class BorderPage extends Page {
         Menu authMenu = new Menu(authenticated ? "Sair" : "Entrar");
         authMenu.setPath(authenticated ? "logout.htm" : "login.htm");
         authMenu.setImageSrc("/assets/images/user.svg"); // ícone do menu de autenticação
+        // O item de autenticação é público: recurso null no contrato do
+        // AccessController. Mas PRECISA do controller — sem ele, o
+        // isUserInRoles() da macro estoura e o template renderiza pela metade.
+        authMenu.setAccessController(menuAccessController);
         rootMenu.add(authMenu);
         addControl(rootMenu);
         

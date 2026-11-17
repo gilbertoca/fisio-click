@@ -1,7 +1,10 @@
 package com.gilbertoca.fisio.page;
 
+import com.gilbertoca.fisio.model.Papel;
 import com.gilbertoca.fisio.model.Usuario;
 import com.gilbertoca.fisio.service.AuthService;
+import com.gilbertoca.fisio.service.ConectadosService;
+import com.gilbertoca.fisio.service.UsuarioService;
 import org.apache.click.control.Form;
 import org.apache.click.control.PasswordField;
 import org.apache.click.control.Submit;
@@ -43,6 +46,18 @@ public class LoginPage extends BorderPage {
             Usuario usuario = authService.authenticate(username.getValue(), password.getValue());
             if (usuario != null) {
                 getContext().setSessionAttribute(AuthenticatedPage.SESSION_USER, usuario);
+                // Registro da sessão aberta — alimenta a tela
+                // "Usuários Conectados" (Usuário, Papel, Host, Início).
+                StringBuilder nomesPapeis = new StringBuilder();
+                for (Papel papel : new UsuarioService().getPapeis(usuario.getId())) {
+                    if (nomesPapeis.length() > 0) {
+                        nomesPapeis.append(", ");
+                    }
+                    nomesPapeis.append(papel.getNome());
+                }
+                ConectadosService.registrar(getContext().getSession().getId(),
+                        usuario.getUsername(), nomesPapeis.toString(),
+                        getContext().getRequest().getRemoteAddr());
                 setRedirect(HomePage.class);
                 return false;
             }
@@ -55,6 +70,7 @@ public class LoginPage extends BorderPage {
     public void onGet() {
         // ?action=logout: desloga e volta para a própria tela de entrada
         if ("logout".equals(action)) {
+            ConectadosService.remover(getContext().getSession().getId());
             getContext().getSession().invalidate();
             setRedirect(LoginPage.class);
         }

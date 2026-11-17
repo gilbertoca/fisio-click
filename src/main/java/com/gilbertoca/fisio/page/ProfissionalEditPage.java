@@ -90,4 +90,13 @@ public class ProfissionalEditPage extends AuthenticatedPage {
         setRedirect(ProfissionalViewPage.class);
         return false;
     }
+
+    /**
+     * Permissões exigidas (AuthenticatedPage, any-of) — Fase 3: o gate de
+     * acesso à página segue a matriz de permissões do módulo de segurança.
+     */
+    @Override
+    protected String[] permissoesExigidas() {
+        return new String[] { "profissional:adicionar", "profissional:editar" };
+    }
 }

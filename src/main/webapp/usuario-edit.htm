@@ -1,0 +1,25 @@
+<article>
+    <h1>Manutenção de Usuário</h1>
+
+    ## Card do formulário: o FieldSet "Login" (nome, usuário, senha,
+    ## e-mail, papel, ativo) vem do $form inteiro.
+    <div class="card">
+        $form
+    </div>
+
+    ## Card "Permissões" (só na edição): lista somente leitura
+    ## "Recurso Ação - SIM/NÃO", em três colunas (columns nativo do CSS).
+    ## As permissões são inerentes aos recursos existentes — nascem via
+    ## SQL quando surge um recurso (tela|relatório) —, daí a ausência de
+    ## qualquer controle de edição aqui.
+    #if($permissoes)
+    <div class="card">
+        <p><strong>Permissões</strong></p>
+        <ul style="columns: 3 14rem;">
+            #foreach($permissao in $permissoes)
+            <li>$permissao</li>
+            #end
+        </ul>
+    </div>
+    #end
+</article>

@@ -176,4 +176,13 @@ public class SessaoProntuarioViewPage extends AuthenticatedPage {
         super.onInit();
         addModel("title", "Atendimentos");
     }
+
+    /**
+     * Permissões exigidas (AuthenticatedPage, any-of) — Fase 3: o gate de
+     * acesso à página segue a matriz de permissões do módulo de segurança.
+     */
+    @Override
+    protected String[] permissoesExigidas() {
+        return new String[] { "sessao:visualizar", "sessao:atender" };
+    }
 }

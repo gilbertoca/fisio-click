@@ -148,4 +148,13 @@ public class ProcedimentoEditPage extends AuthenticatedPage {
             return null;
         }
     }
+
+    /**
+     * Permissões exigidas (AuthenticatedPage, any-of) — Fase 3: o gate de
+     * acesso à página segue a matriz de permissões do módulo de segurança.
+     */
+    @Override
+    protected String[] permissoesExigidas() {
+        return new String[] { "procedimento:adicionar", "procedimento:editar" };
+    }
 }

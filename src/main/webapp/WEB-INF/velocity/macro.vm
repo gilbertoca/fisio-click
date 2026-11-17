@@ -10,7 +10,8 @@
 #macro(renderMenu $menu)
   #foreach($item in $menu.children)
     #if($authenticated)
-      <li>
+      #if($item.isUserInRoles() || ($item.hasChildren() && $item.isUserInChildMenuRoles()))
+        <li>
         #if($item.hasChildren())
           <!-- Submenu via details/summary: padrão que o Bahunya reconhece
                (dropdown por clique, full-width em telas pequenas — o par
@@ -26,6 +27,7 @@
           <a href="$item.href">$item.label</a>
         #end
       </li>
+      #end
     #end
   #end
 #end
