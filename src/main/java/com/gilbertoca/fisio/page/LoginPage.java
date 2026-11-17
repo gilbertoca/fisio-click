@@ -58,7 +58,16 @@ public class LoginPage extends BorderPage {
                 ConectadosService.registrar(getContext().getSession().getId(),
                         usuario.getUsername(), nomesPapeis.toString(),
                         getContext().getRequest().getRemoteAddr());
-                setRedirect(HomePage.class);
+                // Volta para a página originalmente pedida, se houver —
+                // só caminho interno (nada de //host ou esquema externo).
+                Object destino = getContext().getSessionAttribute(AuthenticatedPage.REDIRECT_APOS_LOGIN);
+                getContext().removeSessionAttribute(AuthenticatedPage.REDIRECT_APOS_LOGIN);
+                if (destino instanceof String caminho
+                        && caminho.startsWith("/") && !caminho.startsWith("//")) {
+                    setRedirect(caminho);
+                } else {
+                    setRedirect(HomePage.class);
+                }
                 return false;
             }
             form.setError("Usuário ou senha inválidos.");

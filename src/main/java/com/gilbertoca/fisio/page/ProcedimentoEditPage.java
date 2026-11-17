@@ -61,7 +61,9 @@ public class ProcedimentoEditPage extends AuthenticatedPage {
         addModel("title", "Procedimento Edit");
 
         selectModalidade.getOptionList().clear();
-        selectModalidade.add(Option.EMPTY_OPTION);
+        // Prompt nomeado: salvar sem modalidade é a escolha "uso geral" —
+        // consciente, não esquecimento.
+        selectModalidade.add(new Option("", "Uso geral (sem modalidade)"));
         for (Modalidade modalidade : modalidadeService.getAll()) {
             selectModalidade.add(new Option(modalidade.getId().toString(), modalidade.getNome()));
         }

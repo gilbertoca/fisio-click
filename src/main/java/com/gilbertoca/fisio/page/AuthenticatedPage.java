@@ -18,6 +18,9 @@ public abstract class AuthenticatedPage extends BorderPage {
 
     public static final String SESSION_USER = "authenticatedUser";
 
+    /** Sessão: a página originalmente pedida (o login volta para ela). */
+    public static final String REDIRECT_APOS_LOGIN = "redirectAposLogin";
+
     private final AuthorizationService authorizationService = new AuthorizationService();
 
     @Override
@@ -25,6 +28,21 @@ public abstract class AuthenticatedPage extends BorderPage {
         Context ctx = getContext();
         Object valorSessao = ctx.hasSession() ? ctx.getSessionAttribute(SESSION_USER) : null;
         if (!(valorSessao instanceof Usuario usuario)) {
+            // Guarda a página pedida (com query string — o editar com id
+            // sobrevive ao login) para o login devolver o usuário a ela.
+            // O MockRequest do fork junta parâmetros com a ENTIDADE
+            // "&amp;" (bug do mock); request real nunca traz "&amp;"
+            // literal — normalizar e cortar resíduo no fim.
+            String queryString = ctx.getRequest().getQueryString();
+            if (queryString != null) {
+                queryString = queryString.replace("&amp;", "&");
+                while (queryString.endsWith("&") || queryString.endsWith("?")) {
+                    queryString = queryString.substring(0, queryString.length() - 1);
+                }
+            }
+            String destino = getPath() + (queryString == null || queryString.isBlank()
+                    ? "" : "?" + queryString);
+            ctx.setSessionAttribute(REDIRECT_APOS_LOGIN, destino);
             setRedirect(LoginPage.class);
             return false;
         }

@@ -88,18 +88,18 @@ public class SessaoProntuarioEditPageTest {
         ProcedimentoService service = new ProcedimentoService();
 
         Procedimento a = new Procedimento();
-        a.setNome("Exercícios no Cadillac");
+        a.setNome("No Cadillac ");
         Modalidade stub = new Modalidade();
         stub.setId(modalidadeId);
         a.setModalidade(stub);
         service.create(a);
-        procedimentoAId = service.getAllLikeNome("Exercícios no Cadillac").get(0).getId();
+        procedimentoAId = service.getAllLikeNome("No Cadillac ").get(0).getId();
 
         Procedimento b = new Procedimento();
-        b.setNome("Exercícios no Reformer");
+        b.setNome("No Reformer");
         b.setModalidade(stub);
         service.create(b);
-        procedimentoBId = service.getAllLikeNome("Exercícios no Reformer").get(0).getId();
+        procedimentoBId = service.getAllLikeNome("No Reformer").get(0).getId();
     }
 
     /**

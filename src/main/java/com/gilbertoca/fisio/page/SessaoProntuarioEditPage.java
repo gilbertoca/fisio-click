@@ -420,8 +420,26 @@ public class SessaoProntuarioEditPage extends AuthenticatedPage {
 
         Set<Integer> incluidos = new HashSet<>();
         Integer modalidadeId = (sessao.getModalidade() != null) ? sessao.getModalidade().getId() : null;
+        // Agrupamento consciente: primeiro os procedimentos da MODALIDADE
+        // da sessão (a conduta da casa), depois os de USO GERAL (sem
+        // amarra, servem a qualquer modalidade), rotulados para que a
+        // escolha seja deliberada — o PickList não tem OptionGroup.
+        List<Procedimento> daModalidade = new ArrayList<>();
+        List<Procedimento> deUsoGeral = new ArrayList<>();
         for (Procedimento sugestao : procedimentoService.getSugestoesPorModalidade(modalidadeId)) {
+            if (sugestao.getModalidade() != null) {
+                daModalidade.add(sugestao);
+            } else {
+                deUsoGeral.add(sugestao);
+            }
+        }
+        for (Procedimento sugestao : daModalidade) {
             opcoes.add(new Option(sugestao.getId().toString(), sugestao.getNome()));
+            incluidos.add(sugestao.getId());
+        }
+        for (Procedimento sugestao : deUsoGeral) {
+            opcoes.add(new Option(sugestao.getId().toString(),
+                    sugestao.getNome() + " — uso geral"));
             incluidos.add(sugestao.getId());
         }
 

@@ -54,7 +54,7 @@ public class Sql2oAgendaDeepGraphTest {
 
             // 4. Inserir Modalidade
             Integer idMod = conn.createQuery("INSERT INTO fisio.modalidade (nome, valor_base) VALUES (:nome, :valor)", true)
-                    .addParameter("nome", "Pilates Clínico")
+                    .addParameter("nome", "Pilates Clínico Individualizado")
                     .addParameter("valor", 80.00)
                     .executeUpdate().getKey(Integer.class);
 
@@ -90,7 +90,7 @@ public class Sql2oAgendaDeepGraphTest {
 
             // Validação do Primeiro Nível: Modalidade e Profissional
             assertNotNull("Deveria ter populado a modalidade", s.getModalidade());
-            assertEquals("Pilates Clínico", s.getModalidade().getNome());
+            assertEquals("Pilates Clínico Individualizado", s.getModalidade().getNome());
 
             assertNotNull("Deveria ter populado o profissional", s.getProfissional());
             assertEquals("Dra. Amanda Rodrigues", s.getProfissional().getNome());
