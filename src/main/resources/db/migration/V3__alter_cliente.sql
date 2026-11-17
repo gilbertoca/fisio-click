@@ -12,7 +12,3 @@ ALTER TABLE fisio.cliente ADD COLUMN bairro   VARCHAR(60);
 ALTER TABLE fisio.cliente ADD COLUMN cep      VARCHAR(10);
 ALTER TABLE fisio.cliente ADD COLUMN cidade   VARCHAR(60);
 
-ALTER TABLE fisio.convenio ADD COLUMN endereco VARCHAR(150);
-ALTER TABLE fisio.convenio ADD COLUMN bairro   VARCHAR(60);
-ALTER TABLE fisio.convenio ADD COLUMN cep      VARCHAR(10);
-ALTER TABLE fisio.convenio ADD COLUMN cidade   VARCHAR(60);
