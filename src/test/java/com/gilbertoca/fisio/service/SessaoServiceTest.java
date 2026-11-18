@@ -27,6 +27,7 @@ public class SessaoServiceTest {
     private static Integer clienteId;
     private static Integer idProfissional;
     private static Integer idModalidade;
+    private static Integer idProcedimentoSala;
 
     @BeforeClass
     public static void setUp() {
@@ -59,6 +60,13 @@ public class SessaoServiceTest {
             // 3. Cadastra Modalidade Descrição
             idModalidade = conn.createQuery(
                     "INSERT INTO fisio.modalidade (nome, valor_base) VALUES ('RPG (Reeducação Postural)', 130.00)", true)
+                    .executeUpdate().getKey(Integer.class);
+
+            // 4. Conduta do catálogo para o roteiro da sala (teste do Finalizar)
+            idProcedimentoSala = conn.createQuery(
+                    "INSERT INTO fisio.procedimento (modalidade_id, nome, procedimento_situacao) "
+                    + "VALUES (:modalidadeId, 'Conduta da Sala (teste)', 'ATIVO')", true)
+                    .addParameter("modalidadeId", idModalidade)
                     .executeUpdate().getKey(Integer.class);
 
             conn.commit();
@@ -96,9 +104,11 @@ public class SessaoServiceTest {
         // 1. Executa a gravação direta pela camada Service
         sessaoService.create(sessao);
 
-        // 2. Recupera a grade diária para validação
-        List<Sessao> agenda = sessaoService.listarAgendaDoDia(LocalDate.of(1993, 9, 22));
-        System.out.println(agenda);
+        // 2. Recupera a agenda pela listagem (sem filtro) e isola o registro
+        //    criado acima pelo horário planejado
+        List<Sessao> agenda = sessaoService.listarAgenda(null).stream()
+                .filter(s -> horarioDesejado.equals(s.getDataHoraInicio()))
+                .toList();
         // 3. Asserts de Integridade
         assertEquals(1, agenda.size());
         Sessao sGravada = agenda.get(0);
@@ -218,41 +228,127 @@ public class SessaoServiceTest {
         Integer sessaoId = novaSessaoDb("AGENDADA");
 
         // 1. Abrir o formulário é navegação: nada persistido, ainda AGENDADA
-        assertTrue(sessaoService.get(sessaoId).getPossuiProntuario() == null
-                || !sessaoService.get(sessaoId).getPossuiProntuario());
+        //    e sem início real marcado
+        assertNull(sessaoService.get(sessaoId).getRegistroDtInicio());
 
         // 2. A PRIMEIRA GRAVAÇÃO inicia o atendimento: AGENDADA → EM_ANDAMENTO,
         //    marcando o início real na mesma transação
         Sessao rascunho = new Sessao();
+        rascunho.setId(sessaoId);
         rascunho.setRegistroRelato("Dor lombar 7/10 ao sentar.");
-        Sessao emAndamento = sessaoService.salvarRegistro(sessaoId, rascunho);
+        Sessao emAndamento = sessaoService.salvarRegistro(rascunho);
         assertEquals(SessaoSituacao.EM_ANDAMENTO, emAndamento.getSituacao());
         assertNotNull(emAndamento.getRegistroDtInicio());
         assertNull(emAndamento.getRegistroConduta());
-        assertFalse(sessaoService.podeFinalizar(sessaoId));
+        assertFalse(sessaoService.get(sessaoId).podeFinalizar());
 
         // 3. Rascunho sem conduta: finalização bloqueada
+        Sessao semConduta = new Sessao();
+        semConduta.setId(sessaoId);
+        semConduta.setRegistroRelato("Ainda sem conduta.");
         try {
-            sessaoService.finalizarAtendimento(sessaoId);
+            sessaoService.finalizarAtendimento(semConduta);
             fail("Deveria exigir a conduta registrada do paciente.");
         } catch (IllegalStateException ex) {
             assertTrue(ex.getMessage().contains("conduta"));
         }
-        assertFalse(sessaoService.podeFinalizar(sessaoId));
+        assertFalse(sessaoService.get(sessaoId).podeFinalizar());
 
         // 4. Conduta registrada: a gravação seguinte NÃO re-marca o início real
         LocalDateTime inicioReal = sessaoService.get(sessaoId).getRegistroDtInicio();
         Sessao consolidado = new Sessao();
+        consolidado.setId(sessaoId);
         consolidado.setRegistroConduta("Alongamento passivo, estabilização segmentar.");
-        sessaoService.salvarRegistro(sessaoId, consolidado);
-        assertTrue(sessaoService.podeFinalizar(sessaoId));
+        sessaoService.salvarRegistro(consolidado);
+        assertTrue(sessaoService.get(sessaoId).podeFinalizar());
 
-        Sessao realizada = sessaoService.finalizarAtendimento(sessaoId);
+        Sessao finalizacao = new Sessao();
+        finalizacao.setId(sessaoId);
+        finalizacao.setRegistroConduta("Alongamento passivo, estabilização segmentar.");
+        Sessao realizada = sessaoService.finalizarAtendimento(finalizacao);
         assertEquals(SessaoSituacao.REALIZADA, realizada.getSituacao());
         assertNotNull(realizada.getRegistroDtFim());
 
         // 5. O início real marcado na primeira gravação sobrevive ao ciclo
         assertEquals(inicioReal, sessaoService.get(sessaoId).getRegistroDtInicio());
+    }
+
+    /**
+     * Regressão: o Finalizar da sala grava o estado ATUAL da tela — textos
+     * clínicos digitados e roteiro marcado entram na MESMA transação da
+     * transição, mesmo sem um Salvar anterior.
+     */
+    @Test
+    public void deveGravarRegistroDaTelaAoFinalizar() {
+        sessaoService = new SessaoService();
+
+        Integer sessaoId = novaSessaoDb("EM_ANDAMENTO");
+
+        Sessao daTela = new Sessao();
+        daTela.setId(sessaoId);
+        daTela.setRegistroRelato("Digitado direto no atendimento.");
+        daTela.setRegistroAvaliacao("Teste positivo à palpação.");
+        daTela.setRegistroConduta("Mobilização articular grau II.");
+        daTela.setRegistroOrientacoes("Gelo 20 min e retorno em 48h.");
+        // Roteiro marcado no picklist: coleção do próprio agregado.
+        daTela.incluirProcedimento(idProcedimentoSala);
+
+        Sessao realizada = sessaoService.finalizarAtendimento(daTela);
+
+        assertEquals(SessaoSituacao.REALIZADA, realizada.getSituacao());
+        assertEquals("O relato digitado antes do Finalizar não pode se perder.",
+                "Digitado direto no atendimento.", realizada.getRegistroRelato());
+        assertEquals("Teste positivo à palpação.", realizada.getRegistroAvaliacao());
+        assertEquals("Mobilização articular grau II.", realizada.getRegistroConduta());
+        assertEquals("Gelo 20 min e retorno em 48h.", realizada.getRegistroOrientacoes());
+        assertEquals("O roteiro marcado na tela entra na mesma transação e volta no agregado.",
+                1, realizada.getProcedimentos().size());
+        assertEquals(idProcedimentoSala, realizada.getProcedimentos().get(0).getProcedimentoId());
+        assertNotNull(realizada.getRegistroDtFim());
+    }
+
+    /**
+     * O roteiro é estado do agregado: cada gravação reflete EXATAMENTE a
+     * coleção do modelo — incluir, reduzir e limpar, sempre na transação do
+     * registro e sem observação de execução (a execução é do
+     * registro_conduta).
+     */
+    @Test
+    public void deveSincronizarRoteiroComOEstadoDoAgregado() {
+        sessaoService = new SessaoService();
+
+        Integer sessaoId = novaSessaoDb("EM_ANDAMENTO");
+        Integer segundaConduta;
+        try (Connection conn = DataSourceManager.getSql2o().open()) {
+            segundaConduta = conn.createQuery(
+                    "INSERT INTO fisio.procedimento (modalidade_id, nome, procedimento_situacao) "
+                    + "VALUES (:modalidadeId, 'Conduta Extra (sync)', 'ATIVO')", true)
+                    .addParameter("modalidadeId", idModalidade)
+                    .executeUpdate().getKey(Integer.class);
+        }
+
+        // 2 condutas no modelo → 2 no roteiro gravado
+        Sessao comDuas = new Sessao();
+        comDuas.setId(sessaoId);
+        comDuas.incluirProcedimento(idProcedimentoSala);
+        comDuas.incluirProcedimento(segundaConduta);
+        Sessao salva = sessaoService.salvarRegistro(comDuas);
+        assertEquals(2, salva.getProcedimentos().size());
+        assertTrue("Conduta nova entra no roteiro sem observação de execução.",
+                salva.getProcedimentos().stream().allMatch(p -> p.getObservacao() == null));
+
+        // 1 conduta no modelo → o roteiro perde a que saiu
+        Sessao comUma = new Sessao();
+        comUma.setId(sessaoId);
+        comUma.incluirProcedimento(segundaConduta);
+        Sessao reduzida = sessaoService.salvarRegistro(comUma);
+        assertEquals(1, reduzida.getProcedimentos().size());
+        assertEquals(segundaConduta, reduzida.getProcedimentos().get(0).getProcedimentoId());
+
+        // Lista vazia no modelo → roteiro limpo
+        Sessao semNenhuma = new Sessao();
+        semNenhuma.setId(sessaoId);
+        assertTrue(sessaoService.salvarRegistro(semNenhuma).getProcedimentos().isEmpty());
     }
 
     @Test
@@ -262,9 +358,10 @@ public class SessaoServiceTest {
         Integer sessaoId = novaSessaoDb("CONFIRMADA");
 
         Sessao registro = new Sessao();
+        registro.setId(sessaoId);
         registro.setRegistroConduta("Técnica de liberação miofascial.");
 
-        Sessao emAndamento = sessaoService.salvarRegistro(sessaoId, registro);
+        Sessao emAndamento = sessaoService.salvarRegistro(registro);
         assertEquals(SessaoSituacao.EM_ANDAMENTO, emAndamento.getSituacao());
         assertNotNull(emAndamento.getRegistroDtInicio());
     }
@@ -276,10 +373,11 @@ public class SessaoServiceTest {
         Integer sessaoCanceladaId = novaSessaoDb("CANCELADA");
 
         Sessao registro = new Sessao();
+        registro.setId(sessaoCanceladaId);
         registro.setRegistroConduta("Tentativa em sessão terminal.");
 
         try {
-            sessaoService.salvarRegistro(sessaoCanceladaId, registro);
+            sessaoService.salvarRegistro(registro);
             fail("Deveria bloquear registro do atendimento em sessão CANCELADA.");
         } catch (IllegalStateException ex) {
             assertTrue(ex.getMessage().contains("Cancelada"));
@@ -316,13 +414,17 @@ public class SessaoServiceTest {
         // outros atendimentos com registro aparecem — o critério é que TODAS
         // as linhas têm o registro e a nossa está presente.
         Integer emAndamentoId = novaSessaoDb("AGENDADA");
-        sessaoService.salvarRegistro(emAndamentoId, new Sessao());
+        Sessao inicio = new Sessao();
+        inicio.setId(emAndamentoId);
+        sessaoService.salvarRegistro(inicio);
 
         List<Sessao> atendimentos = sessaoService.getUltimosAtendimentos(5);
         boolean soComRegistro = !atendimentos.isEmpty();
         boolean nossoAtendimentoPresente = false;
         for (Sessao linha : atendimentos) {
-            soComRegistro &= Boolean.TRUE.equals(linha.getPossuiProntuario());
+            // A query recorta por registro_dt_inicio IS NOT NULL; cada linha
+            // carregada pelo agregado deve comprovar o início real marcado.
+            soComRegistro &= sessaoService.get(linha.getId()).getRegistroDtInicio() != null;
             nossoAtendimentoPresente |= linha.getId().equals(emAndamentoId);
         }
         assertTrue("Cockpit da sala deveria listar apenas atendimentos com registro iniciado.", soComRegistro);

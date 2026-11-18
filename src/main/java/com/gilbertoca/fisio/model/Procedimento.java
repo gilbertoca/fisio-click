@@ -30,7 +30,15 @@ public class Procedimento implements Serializable {
     public void setCodigoTuss(String codigoTuss) { this.codigoTuss = codigoTuss; }
     public ProcedimentoSituacao getSituacao() { return situacao; }
     public void setSituacao(ProcedimentoSituacao situacao) { this.situacao = situacao; }
-    public Modalidade getModalidade() { return modalidade; }
+    /**
+     * Modalidade do catálogo. O LEFT JOIN das queries instancia um STUB quando
+     * o procedimento é de uso geral (colunas da modalidade todas nulas) —
+     * normaliza o stub de volta para null: "sem modalidade" tem um único
+     * significado no modelo (e no agrupamento de sugestões da sala).
+     */
+    public Modalidade getModalidade() {
+        return (modalidade != null && modalidade.getId() == null) ? null : modalidade;
+    }
     public Integer getModalidadeId() { return this.modalidade != null ? this.modalidade.getId() : null; }
     public void setModalidade(Modalidade modalidade) { this.modalidade = modalidade; }
 
@@ -68,7 +76,7 @@ public class Procedimento implements Serializable {
         sb.append(", nome=").append(nome);
         sb.append(", codigoTuss=").append(codigoTuss);
         sb.append(", situacao=").append(situacao);
-        sb.append(", modalidade=").append(modalidade);
+        sb.append(", modalidade=").append(getModalidade());
         sb.append('}');
         return sb.toString();
     }

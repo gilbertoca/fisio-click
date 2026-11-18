@@ -2,10 +2,10 @@
 -- FisioClin — Seed de Dados Fictícios Compatível com DDL Final (V1)
 -- ============================================================================
 -- As seções de MODALIDADE e PROCEDIMENTO migraram para a migration
--- V8__pre_cadastro_modalidade_procedimento.sql (curada com TUSS Tabela 22):
--- em banco novo, o catálogo já nasce com o esquema; este seed só completa
--- os dados operacionais (convênios em diante). Os ids dos procedimentos
--- (1..16, ordem do V8) continuam batendo com as referências abaixo.
+-- V7__insert_modalidade.sql (catálogo pré-cadastrado): em banco novo, o
+-- catálogo já nasce com o esquema; este seed só completa os dados
+-- operacionais (convênios em diante). Os ids dos procedimentos (1..14,
+-- ordem do V7) continuam batendo com as referências abaixo.
 -- ============================================================================
 
 -- 3. CONVÊNIOS
@@ -132,9 +132,9 @@ INSERT INTO fisio.recebimento_parcela (
 -- semântica do "default nextval('schema.seq')" do Postgres): sem isto, a
 -- primeira inclusão pela tela tenta o id 1 e estoura a PK. O H2 aceita
 -- subconsulta no RESTART: sequência reancora em MAX(id)+1, sem salto fixo.
--- Modalidade e procedimento NÃO precisam: o catálogo agora nasce da V8,
--- que insere sem id explícito (a identity anda sozinha). sessao_procedimento
--- não tem identity (PK composta) — não precisa.
+-- Modalidade e procedimento NÃO precisam: o catálogo agora nasce da V7,
+-- que insere com id explícito e reancora as identities no próprio arquivo.
+-- sessao_procedimento não tem identity (PK composta) — não precisa.
 ALTER TABLE fisio.convenio            ALTER COLUMN convenio_id         RESTART WITH (SELECT COALESCE(MAX(convenio_id),         0)+1 FROM fisio.convenio);
 ALTER TABLE fisio.profissional        ALTER COLUMN profissional_id     RESTART WITH (SELECT COALESCE(MAX(profissional_id),     0)+1 FROM fisio.profissional);
 ALTER TABLE fisio.cliente             ALTER COLUMN cliente_id          RESTART WITH (SELECT COALESCE(MAX(cliente_id),          0)+1 FROM fisio.cliente);

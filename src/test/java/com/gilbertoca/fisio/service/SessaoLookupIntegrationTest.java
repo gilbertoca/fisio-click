@@ -61,11 +61,14 @@ public class SessaoLookupIntegrationTest {
         assertEquals("Should retrieve exactly 2 therapists", 2, profissionais.size());
         assertEquals("Dra. Jane", profissionais.get(1).getNome()); // Alphabetical sort check
 
-        // 3. Verify Service Modality Arrays
+        // 3. Verify Service Modality Arrays — o catálogo pré-cadastrado (V7)
+        //    já traz modalidades; o cenário do teste precisa estar presente.
         List<Modalidade> modalidades = sessaoService.getAllModalidades();
         assertNotNull(modalidades);
-        assertEquals("Should retrieve exactly 2 modalities", 2, modalidades.size());
-        assertEquals("Fisioterapia Ortopedica", modalidades.get(0).getNome());
+        assertTrue("As modalidades do cenário deveriam estar na lista.",
+                modalidades.stream().anyMatch(m -> "Fisioterapia Ortopedica".equals(m.getNome())));
+        assertTrue("As modalidades do cenário deveriam estar na lista.",
+                modalidades.stream().anyMatch(m -> "Pilates Clinico".equals(m.getNome())));
     }
 
     @AfterClass

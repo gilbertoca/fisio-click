@@ -4,9 +4,9 @@ import com.gilbertoca.fisio.infra.DataSourceManager;
 import com.gilbertoca.fisio.model.Usuario;
 import com.gilbertoca.fisio.model.Modalidade;
 import com.gilbertoca.fisio.model.Procedimento;
-import com.gilbertoca.fisio.model.SessaoProcedimento;
+import com.gilbertoca.fisio.model.Sessao;
 import com.gilbertoca.fisio.service.ProcedimentoService;
-import java.util.List;
+import com.gilbertoca.fisio.service.SessaoService;
 import org.apache.click.MockContainer;
 import org.apache.click.servlet.MockRequest;
 import org.junit.AfterClass;
@@ -108,8 +108,6 @@ public class SessaoProntuarioEditPageTest {
      */
     @Test
     public void devePersistirCondutasMarcadasNoPostDoSalvar() {
-        ProcedimentoService service = new ProcedimentoService();
-
         MockRequest request = new MockRequest();
         request.setSession(container.getSession()); // method default: POST
         request.setSession(container.getSession());
@@ -122,9 +120,8 @@ public class SessaoProntuarioEditPageTest {
 
         container.testPage(SessaoProntuarioEditPage.class);
 
-        List<SessaoProcedimento> roteiro = service.getRoteiroDaSessao(sessaoId);
         assertEquals("O bind do POST deve ler as condutas marcadas e o Salvar sincronizar o roteiro.",
-                2, roteiro.size());
+                2, new SessaoService().get(sessaoId).getProcedimentos().size());
     }
 
     /**
@@ -134,10 +131,13 @@ public class SessaoProntuarioEditPageTest {
      */
     @Test
     public void deveMarcarAsCondutasGravadasNaListbox() {
-        // Roteiro semeado direto no service (independe da ordem dos testes)
-        ProcedimentoService service = new ProcedimentoService();
-        service.adicionarProcedimento(sessaoId, procedimentoAId, null);
-        service.adicionarProcedimento(sessaoId, procedimentoBId, null);
+        // Roteiro semeado pelo próprio agregado (independe da ordem dos testes):
+        // o modelo é a verdade do roteiro e entra na transação do registro.
+        Sessao roteiro = new Sessao();
+        roteiro.setId(sessaoId);
+        roteiro.incluirProcedimento(procedimentoAId);
+        roteiro.incluirProcedimento(procedimentoBId);
+        new SessaoService().salvarRegistro(roteiro);
 
         MockRequest request = new MockRequest();
         request.setSession(container.getSession());

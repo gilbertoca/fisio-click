@@ -75,7 +75,9 @@ public class SessaoEditPageTest {
 
         // 4. Assert backend data layer changes to confirm successful execution
         SessaoService service = new SessaoService();
-        List<Sessao> agenda = service.listarAgendaDoDia(LocalDate.of(2026, 6, 12));
+        List<Sessao> agenda = service.listarAgenda(null).stream()
+                .filter(s -> s.getDataHoraInicio().toLocalDate().equals(LocalDate.of(2026, 6, 12)))
+                .toList();
         
         assertEquals("Should have recorded exactly 1 session in the database", 1, agenda.size());
         Sessao savedSessao = agenda.get(0);

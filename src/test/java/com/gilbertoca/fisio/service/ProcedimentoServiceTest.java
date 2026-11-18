@@ -3,7 +3,6 @@ package com.gilbertoca.fisio.service;
 import com.gilbertoca.fisio.infra.DataSourceManager;
 import com.gilbertoca.fisio.model.Modalidade;
 import com.gilbertoca.fisio.model.Procedimento;
-import com.gilbertoca.fisio.model.SessaoProcedimento;
 import com.gilbertoca.fisio.model.enums.ProcedimentoSituacao;
 import java.util.List;
 import org.junit.AfterClass;
@@ -75,16 +74,16 @@ public class ProcedimentoServiceTest {
         procedimentoService = new ProcedimentoService();
 
         Procedimento procedimento = new Procedimento();
-        procedimento.setNome("Reformer");
+        procedimento.setNome("Reformer Teste");
         procedimento.setCodigoTuss("20101234");
         Modalidade modalidade = new Modalidade();
         modalidade.setId(idModalidade);
         procedimento.setModalidade(modalidade);
         procedimentoService.create(procedimento);
 
-        Procedimento recuperado = procedimentoService.getAllLikeNome("Reformer").get(0);
+        Procedimento recuperado = procedimentoService.getAllLikeNome("Reformer Teste").get(0);
         assertNotNull("Procedimento recém-criado deveria ser recuperável.", recuperado.getId());
-        assertEquals("Reformer", recuperado.getNome());
+        assertEquals("Reformer Teste", recuperado.getNome());
         assertEquals("20101234", recuperado.getCodigoTuss());
         assertEquals(ProcedimentoSituacao.ATIVO, recuperado.getSituacao());
         assertNotNull("Grafo da modalidade deveria vir na mesma ida ao banco.", recuperado.getModalidade());
@@ -96,11 +95,11 @@ public class ProcedimentoServiceTest {
         procedimentoService = new ProcedimentoService();
 
         Procedimento procedimento = new Procedimento();
-        procedimento.setNome("TENS");
+        procedimento.setNome("TENS Teste");
         procedimentoService.create(procedimento);
 
-        Procedimento recuperado = procedimentoService.getAllLikeNome("TENS").get(0);
-        assertEquals("TENS", recuperado.getNome());
+        Procedimento recuperado = procedimentoService.getAllLikeNome("TENS Teste").get(0);
+        assertEquals("TENS Teste", recuperado.getNome());
         assertEquals("Procedimento de uso geral fica sem amarra (modalidade opcional).",
                 null, recuperado.getModalidade());
     }
@@ -110,9 +109,9 @@ public class ProcedimentoServiceTest {
         procedimentoService = new ProcedimentoService();
 
         Procedimento procedimento = new Procedimento();
-        procedimento.setNome("Liberação Miofascial");
+        procedimento.setNome("Liberação Teste");
         procedimentoService.create(procedimento);
-        Integer id = procedimentoService.getAllLikeNome("Liberação Miofascial").get(0).getId();
+        Integer id = procedimentoService.getAllLikeNome("Liberação Teste").get(0).getId();
 
         Procedimento carregado = procedimentoService.get(id);
         carregado.setCodigoTuss("40102345");
@@ -133,9 +132,9 @@ public class ProcedimentoServiceTest {
         procedimentoService = new ProcedimentoService();
 
         Procedimento procedimento = new Procedimento();
-        procedimento.setNome("Cadillac");
+        procedimento.setNome("Cadillac Teste");
         procedimentoService.create(procedimento);
-        Integer id = procedimentoService.getAllLikeNome("Cadillac").get(0).getId();
+        Integer id = procedimentoService.getAllLikeNome("Cadillac Teste").get(0).getId();
 
         procedimentoService.delete(id);
         assertNull("Procedimento sem uso deveria ser excluído.", procedimentoService.get(id));
@@ -150,7 +149,16 @@ public class ProcedimentoServiceTest {
         procedimentoService.create(procedimento);
         Integer id = procedimentoService.getAllLikeNome("Bola Suíça").get(0).getId();
 
-        procedimentoService.adicionarProcedimento(idSessao, id, "3x10, apoio total");
+        // Roteiro semeado direto: a escrita do roteiro é do agregado Sessao
+        // (SessaoService); o catálogo só precisa enxergar o uso.
+        try (Connection conn = DataSourceManager.getSql2o().open()) {
+            conn.createQuery(
+                    "INSERT INTO fisio.sessao_procedimento (sessao_id, procedimento_id, observacao) "
+                    + "VALUES (:sessaoId, :procedimentoId, '3x10, apoio total')")
+                    .addParameter("sessaoId", idSessao)
+                    .addParameter("procedimentoId", id)
+                    .executeUpdate();
+        }
 
         try {
             procedimentoService.delete(id);
@@ -159,63 +167,6 @@ public class ProcedimentoServiceTest {
             assertTrue(ex.getMessage().contains("Inative-o"));
         }
         assertNotNull("Procedimento usado permanece no catálogo.", procedimentoService.get(id));
-    }
-
-    @Test
-    public void deveGerenciarRoteiroDaSessao() {
-        procedimentoService = new ProcedimentoService();
-
-        Integer idPilates = idModalidade;
-        Procedimento procedimentoA = new Procedimento();
-        procedimentoA.setNome("Footwork");
-        Modalidade modalidadeA = new Modalidade();
-        modalidadeA.setId(idPilates);
-        procedimentoA.setModalidade(modalidadeA);
-        procedimentoService.create(procedimentoA);
-        Integer idFootwork = procedimentoService.getAllLikeNome("Footwork").get(0).getId();
-
-        Procedimento procedimentoB = new Procedimento();
-        procedimentoB.setNome("Alongamento Global");
-        procedimentoService.create(procedimentoB);
-        Integer idAlongamento = procedimentoService.getAllLikeNome("Alongamento Global").get(0).getId();
-
-        // Adiciona duas condutas ao roteiro da sessão. O banco é compartilhado
-        // entre os testes (a sessão pode já ter condutas de outros testes),
-        // então os critérios são relativos ao tamanho inicial.
-        List<SessaoProcedimento> roteiroInicial = procedimentoService.getRoteiroDaSessao(idSessao);
-        int antes = roteiroInicial.size();
-
-        procedimentoService.adicionarProcedimento(idSessao, idFootwork, "Carga mola azul, 3x12");
-        procedimentoService.adicionarProcedimento(idSessao, idAlongamento, "20 min lombar");
-
-        List<SessaoProcedimento> roteiro = procedimentoService.getRoteiroDaSessao(idSessao);
-        assertEquals("Roteiro deveria ter as duas condutas novas.", antes + 2, roteiro.size());
-
-        SessaoProcedimento footwork = roteiro.stream()
-                .filter(item -> idFootwork.equals(item.getProcedimentoId()))
-                .findFirst().orElse(null);
-        assertNotNull(footwork);
-        assertEquals("Carga mola azul, 3x12", footwork.getObservacao());
-        assertNotNull("Grafo do catálogo deveria vir no roteiro.", footwork.getProcedimento());
-        assertEquals("Footwork", footwork.getProcedimento().getNome());
-        assertEquals("Amarras da modalidade também no grafo do roteiro.",
-                idPilates, footwork.getProcedimento().getModalidade().getId());
-
-        // Re-adicionar a mesma conduta atualiza a observação (PK composta)
-        procedimentoService.adicionarProcedimento(idSessao, idFootwork, "Carga mola vermelha, 4x10");
-        roteiro = procedimentoService.getRoteiroDaSessao(idSessao);
-        assertEquals("Re-adicionar conduta não deveria duplicar linha.", antes + 2, roteiro.size());
-        footwork = roteiro.stream()
-                .filter(item -> idFootwork.equals(item.getProcedimentoId()))
-                .findFirst().orElse(null);
-        assertEquals("Carga mola vermelha, 4x10", footwork.getObservacao());
-
-        // Remove uma conduta
-        procedimentoService.removerProcedimento(idSessao, idAlongamento);
-        roteiro = procedimentoService.getRoteiroDaSessao(idSessao);
-        assertEquals("Conduta removida deveria sair do roteiro.", antes + 1, roteiro.size());
-        assertFalse(roteiro.stream().anyMatch(item -> idAlongamento.equals(item.getProcedimentoId())));
-        assertTrue(roteiro.stream().anyMatch(item -> idFootwork.equals(item.getProcedimentoId())));
     }
 
     @Test
@@ -244,11 +195,11 @@ public class ProcedimentoServiceTest {
 
         // Amarrado a OUTRA modalidade: não deve ser sugerido para Pilates
         Modalidade outra = new Modalidade();
-        outra.setNome("Massagem");
+        outra.setNome("Massagem Teste");
         outra.setValorBase(new java.math.BigDecimal("90.00"));
         outra.setCapacidadeSimultanea(1);
         modalidadeService.create(outra);
-        Integer outraId = modalidadeService.getAllLikeNome("Massagem").get(0).getId();
+        Integer outraId = modalidadeService.getAllLikeNome("Massagem Teste").get(0).getId();
 
         Procedimento daOutra = new Procedimento();
         daOutra.setNome("Pedra Quente");
@@ -272,42 +223,5 @@ public class ProcedimentoServiceTest {
         List<Procedimento> sugestoesOutra = procedimentoService.getSugestoesPorModalidade(outraId);
         assertTrue(sugestoesOutra.stream().anyMatch(p -> "Fita Elástica".equals(p.getNome())));
         assertFalse(sugestoesOutra.stream().anyMatch(p -> "Cadillac Barra".equals(p.getNome())));
-    }
-
-    @Test
-    public void deveSincronizarRoteiroComAsCondutasEscolhidas() {
-        procedimentoService = new ProcedimentoService();
-
-        Procedimento primeira = new Procedimento();
-        primeira.setNome("Polegar Pilates");
-        procedimentoService.create(primeira);
-        Integer idPrimeira = procedimentoService.getAllLikeNome("Polegar Pilates").get(0).getId();
-
-        Procedimento segunda = new Procedimento();
-        segunda.setNome("Prancha Pilates");
-        procedimentoService.create(segunda);
-        Integer idSegunda = procedimentoService.getAllLikeNome("Prancha Pilates").get(0).getId();
-
-        // Sincroniza com as duas marcadas: o roteiro passa a ser EXATAMENTE
-        // essa seleção (o que estava gravado e saiu da seleção é removido)
-        procedimentoService.sincronizarRoteiroDaSessao(idSessao,
-                java.util.Arrays.asList(idPrimeira, idSegunda));
-        List<SessaoProcedimento> roteiro = procedimentoService.getRoteiroDaSessao(idSessao);
-        assertEquals(2, roteiro.size());
-        assertTrue(roteiro.stream().anyMatch(item -> idPrimeira.equals(item.getProcedimentoId())));
-        assertTrue(roteiro.stream().anyMatch(item -> idSegunda.equals(item.getProcedimentoId())));
-        // Condutas novas entram sem observação (execução fica no registro_conduta)
-        assertTrue(roteiro.stream().allMatch(item -> item.getObservacao() == null));
-
-        // Profissional desmarca a primeira: só a segunda permanece
-        procedimentoService.sincronizarRoteiroDaSessao(idSessao,
-                java.util.Arrays.asList(idSegunda));
-        roteiro = procedimentoService.getRoteiroDaSessao(idSessao);
-        assertEquals(1, roteiro.size());
-        assertEquals(idSegunda, roteiro.get(0).getProcedimentoId());
-
-        // Nenhuma marcada: roteiro vazio
-        procedimentoService.sincronizarRoteiroDaSessao(idSessao, java.util.Collections.emptyList());
-        assertTrue(procedimentoService.getRoteiroDaSessao(idSessao).isEmpty());
     }
 }

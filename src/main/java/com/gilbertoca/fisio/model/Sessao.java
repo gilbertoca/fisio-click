@@ -2,6 +2,8 @@ package com.gilbertoca.fisio.model;
 
 import java.io.Serializable;
 import java.time.LocalDateTime; // Alterado para LocalDateTime (Data e Hora)
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import com.gilbertoca.fisio.model.enums.PagamentoOrigem;
 import com.gilbertoca.fisio.model.enums.SessaoSituacao;
@@ -28,11 +30,10 @@ public class Sessao implements Serializable {
     private String registroOrientacoes; // Recomendações para casa ou próximos passos
     private LocalDateTime registroDtInicio; // início real do atendimento
     private LocalDateTime registroDtFim;    // fim real do atendimento
-    /** Flag de leitura para listagens: a sessão já possui registro clínico? */
-    private Boolean possuiProntuario;
     private Cliente cliente;
     private Profissional profissional;
     private Modalidade modalidade;
+    private List<SessaoProcedimento> procedimentos = new ArrayList<>();
 
     public Sessao() {this.situacao = SessaoSituacao.AGENDADA;}
 
@@ -48,8 +49,6 @@ public class Sessao implements Serializable {
     public void setPagamentoOrigem(PagamentoOrigem pagamentoOrigem) { this.pagamentoOrigem = pagamentoOrigem; }
     public SessaoSituacao getSituacao() { return situacao; }
     public void setSituacao(SessaoSituacao situacao) { this.situacao = situacao; }
-    public Boolean getPossuiProntuario() { return possuiProntuario; }
-    public void setPossuiProntuario(Boolean possuiProntuario) { this.possuiProntuario = possuiProntuario; }
     public String getObservacoesRecepcao() { return observacoesRecepcao; }
     public void setObservacoesRecepcao(String observacoesRecepcao) { this.observacoesRecepcao = observacoesRecepcao; }
     public String getRegistroRelato() { return registroRelato; }
@@ -73,6 +72,46 @@ public class Sessao implements Serializable {
     public Modalidade getModalidade() { return modalidade; }
     public Integer getModalidadeId() { return this.modalidade != null ? this.modalidade.getId() : null; }
     public void setModalidade(Modalidade modalidade) { this.modalidade = modalidade; }
+
+    /**
+     * Roteiro de condutas do atendimento (sessao_procedimento): coleção
+     * DEPENDENTE da sessão — carregada junto com o agregado e gravada na
+     * mesma transação do registro. Lista vazia = sem conduta marcada.
+     */
+    public List<SessaoProcedimento> getProcedimentos() { return procedimentos; }
+    public void setProcedimentos(List<SessaoProcedimento> procedimentos) { this.procedimentos = procedimentos; }
+
+    /**
+     * Marca uma conduta do catálogo no roteiro do atendimento. O vínculo é
+     * da própria sessão: o sessao_id do item sai do agregado, não da tela.
+     */
+    public void incluirProcedimento(Integer procedimentoId) {
+        SessaoProcedimento item = new SessaoProcedimento();
+        item.setSessaoId(this.id);
+        item.setProcedimentoId(procedimentoId);
+        procedimentos.add(item);
+    }
+
+    /**
+     * O registro do atendimento tem conduta registrada? Regra de domínio do
+     * agregado (o registro_conduta é coluna desta sessão): sem conduta, a
+     * sessão não pode ser finalizada.
+     */
+    public boolean possuiConduta() {
+        return registroConduta != null && !registroConduta.trim().isEmpty();
+    }
+
+    /**
+     * Esta sessão, tal como carregada, pode ser finalizada? A máquina de
+     * estados do enum autoriza a transição para REALIZADA a partir de
+     * AGENDADA/CONFIRMADA/EM_ANDAMENTO, e o registro exige conduta.
+     * A página usa esta regra para exibir o botão; o service revalida a
+     * situação contra o banco dentro da transação.
+     */
+    public boolean podeFinalizar() {
+        return situacao != null && situacao.podeTransicionarPara(SessaoSituacao.REALIZADA)
+                && possuiConduta();
+    }
 
     @Override
     public int hashCode() {

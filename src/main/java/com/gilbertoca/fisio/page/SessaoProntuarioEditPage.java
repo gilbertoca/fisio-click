@@ -55,9 +55,9 @@ import org.apache.click.util.Bindable;
  * marca registro_dt_inicio na mesma transação. Se o profissional desistir
  * (Cancelar), nada foi alterado — não há transição a desfazer.</li>
  * <li><b>EM_ANDAMENTO</b>: botão Salvar Anotações + Cancelar; anotações
- * editáveis. Finalizar Atendimento só aparece quando o registro da sessão
- * tem conduta registrada — mesmo critério do guard de
- * SessaoService.finalizarAtendimento.</li>
+ * editáveis. Finalizar Atendimento só aparece quando o agregado autoriza
+ * (Sessao.podeFinalizar: transição para REALIZADA permitida + conduta
+ * registrada) — mesmo critério que o service revalida contra o banco.</li>
  * <li><b>REALIZADA / FALTOU / CANCELADA</b>: histórico — sem botões de
  * transição, somente Cancelar; anotações readonly (REALIZADA ainda permite
  * consolidação do texto via service, a tela não oferece edição).</li>
@@ -307,7 +307,9 @@ public class SessaoProntuarioEditPage extends AuthenticatedPage {
             form.add(iniciarSubmit);
         } else if (editavel) {
             form.add(salvarSubmit);
-            if (podeFinalizar()) {
+            // Regra de exibição vem do agregado (Sessao.podeFinalizar):
+            // transição para REALIZADA permitida + conduta registrada.
+            if (sessao.podeFinalizar()) {
                 form.add(finalizarSubmit);
             }
         }
@@ -338,14 +340,6 @@ public class SessaoProntuarioEditPage extends AuthenticatedPage {
         return sessao != null && sessao.getSituacao() == SessaoSituacao.EM_ANDAMENTO;
     }
 
-    /**
-     * Finalizar exige o registro da sessão com conduta registrada — mesmo
-     * critério do guard do service (SessaoService.finalizarAtendimento).
-     */
-    private boolean podeFinalizar() {
-        return atendimentoEmAndamento() && sessaoService.podeFinalizar(sessao.getId());
-    }
-
     /** Formato do horário planejado no painel de conferência do template. */
     private static final DateTimeFormatter FORMATO_HORARIO = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -363,31 +357,41 @@ public class SessaoProntuarioEditPage extends AuthenticatedPage {
     }
 
     /**
-     * Monta o delta do registro a partir da tela: somente as colunas
-     * registro_* preenchidas pelo profissional; a transição marca os
-     * registro_dt_* e o service preserva o restante da Sessao.
+     * Modelo do registro a partir da tela: a MESMA Sessao, com o id, os textos
+     * clínicos e o roteiro marcado no picklist. O service grava o modelo
+     * inteiro de uma vez (transição + textos + roteiro) — a tela não monta
+     * "deltas" parciais nem chama dois services.
      */
-    private Sessao montarRegistroDaTela() {
-        Sessao registro = new Sessao();
-        registro.setRegistroRelato(registroRelato.getValue());
-        registro.setRegistroAvaliacao(registroAvaliacao.getValue());
-        registro.setRegistroConduta(registroConduta.getValue());
-        registro.setRegistroOrientacoes(registroOrientacoes.getValue());
-        return registro;
+    private Sessao montarSessaoDaTela() {
+        Sessao modelo = new Sessao();
+        modelo.setId(id);
+        modelo.setRegistroRelato(registroRelato.getValue());
+        modelo.setRegistroAvaliacao(registroAvaliacao.getValue());
+        modelo.setRegistroConduta(registroConduta.getValue());
+        modelo.setRegistroOrientacoes(registroOrientacoes.getValue());
+        // Roteiro: a seleção do picklist é o estado da coleção do agregado.
+        for (String valor : pickCondutas.getSelectedValues()) {
+            try {
+                modelo.incluirProcedimento(Integer.valueOf(valor));
+            } catch (NumberFormatException ex) {
+                // valor não numérico no request: não entra no roteiro
+            }
+        }
+        return modelo;
     }
 
     /**
-     * Seleção do picklist (estado de exibição, onRender): o roteiro
-     * gravado. As OPÇÕES não são manipuladas aqui — o PickList as busca via
-     * DataProvider (montarOpcoesDeCondutas) no momento em que as requer
-     * (bind no POST, render). No ciclo POST o bind já aconteceu e o Salvar
-     * sincronizou o roteiro: a tela volta a exibir o estado GRAVADO, não o
-     * POSTado.
+     * Seleção do picklist (estado de exibição, onRender): o roteiro gravado,
+     * já carregado junto com a Sessao (coleção do agregado). As OPÇÕES não são
+     * manipuladas aqui — o PickList as busca via DataProvider
+     * (montarOpcoesDeCondutas) no momento em que as requer (bind no POST,
+     * render). No ciclo POST o bind já aconteceu e o Salvar sincronizou o
+     * roteiro: a tela volta a exibir o estado GRAVADO, não o POSTado.
      */
     private void popularCondutas() {
         List<String> noRoteiro = new ArrayList<>();
         if (sessao != null) {
-            for (SessaoProcedimento item : procedimentoService.getRoteiroDaSessao(sessao.getId())) {
+            for (SessaoProcedimento item : sessao.getProcedimentos()) {
                 noRoteiro.add(item.getProcedimentoId().toString());
             }
         }
@@ -445,7 +449,7 @@ public class SessaoProntuarioEditPage extends AuthenticatedPage {
 
         // Itens do roteiro fora das sugestões: histórico do catálogo — entram
         // nas opções para não serem descartados pelo sync do Salvar.
-        for (SessaoProcedimento item : procedimentoService.getRoteiroDaSessao(sessao.getId())) {
+        for (SessaoProcedimento item : sessao.getProcedimentos()) {
             if (!incluidos.contains(item.getProcedimentoId())) {
                 boolean inativo = item.getProcedimento() != null
                         && item.getProcedimento().getSituacao() == ProcedimentoSituacao.INATIVO;
@@ -454,19 +458,6 @@ public class SessaoProntuarioEditPage extends AuthenticatedPage {
             }
         }
         return opcoes;
-    }
-
-    /** Condutas marcadas no picklist, como ids para o sync do service. */
-    private List<Integer> condutasEscolhidas() {
-        List<Integer> escolhidos = new ArrayList<>();
-        for (String valor : pickCondutas.getSelectedValues()) {
-            try {
-                escolhidos.add(Integer.valueOf(valor));
-            } catch (NumberFormatException ex) {
-                // valor não numérico no request: não entra no roteiro
-            }
-        }
-        return escolhidos;
     }
 
     /**
@@ -493,9 +484,9 @@ public class SessaoProntuarioEditPage extends AuthenticatedPage {
      * Salvar Anotações é a gravação real — e, na primeira gravação de uma
      * sessão da fila, é ELA que inicia o atendimento (service avança para
      * EM_ANDAMENTO e marca registro_dt_inicio). Grava também o roteiro: a
-     * seleção do picklist de condutas vira sessao_procedimento (sync do
-     * service). Re-render da mesma tela:
-     * retorna true para o servlet seguir para onRender — retornar false
+     * seleção do picklist de condutas vira sessao_procedimento — registro,
+     * situação e roteiro numa única transação (service). Re-render da mesma
+     * tela: retorna true para o servlet seguir para onRender — retornar false
      * pularia o onRender e a tela sairia sem o estado aplicado (botões e
      * readonly das anotações). A Sessao em memória é recarregada: o onRender
      * aplica o estado da situação GRAVADA — com a conduta registrada, o
@@ -507,10 +498,7 @@ public class SessaoProntuarioEditPage extends AuthenticatedPage {
             return true;
         }
         try {
-            sessao = sessaoService.salvarRegistro(id, montarRegistroDaTela());
-            // Roteiro (condutas) sincronizado com a seleção do picklist: o
-            // que está marcado é o que ficou gravado.
-            procedimentoService.sincronizarRoteiroDaSessao(id, condutasEscolhidas());
+            sessao = sessaoService.salvarRegistro(montarSessaoDaTela());
             addModel("mensagem", "Anotações salvas.");
         } catch (RuntimeException ex) {
             form.setError(ex.getMessage());
@@ -519,13 +507,20 @@ public class SessaoProntuarioEditPage extends AuthenticatedPage {
         return true;
     }
 
+    /**
+     * Finalizar Atendimento grava o estado ATUAL da tela (textos clínicos +
+     * roteiro marcado) E aplica a transição para REALIZADA na mesma
+     * transação — o profissional pode digitar e finalizar direto, sem um
+     * Salvar intermediário; o guard da conduta olha o texto que está sendo
+     * gravado, não a linha antiga.
+     */
     public boolean onFinalizarClick() {
         if (id == null) {
             form.setError("Sessão não informada.");
             return true;
         }
         try {
-            Sessao atualizada = sessaoService.finalizarAtendimento(id);
+            Sessao atualizada = sessaoService.finalizarAtendimento(montarSessaoDaTela());
             addModel("mensagem", "Atendimento finalizado: " + atualizada.getSituacao() + ".");
         } catch (RuntimeException ex) {
             form.setError(ex.getMessage());

@@ -4,8 +4,8 @@ import com.gilbertoca.fisio.model.Cliente;
 import com.gilbertoca.fisio.model.Modalidade;
 import com.gilbertoca.fisio.model.Profissional;
 import com.gilbertoca.fisio.model.Sessao;
+import com.gilbertoca.fisio.model.SessaoProcedimento;
 import com.gilbertoca.fisio.model.enums.SessaoSituacao;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.gilbertoca.fisio.infra.DataSourceManager;
@@ -25,6 +25,9 @@ import org.sql2o.Connection;
  * reais (registro_dt_inicio/fim), distintos dos dt_hora_* da agenda. O
  * compartilhamento de ambiente em modalidades de grupo (N sessões
  * individuais no mesmo slot) é governado aqui pela capacidade_simultanea.
+ * O roteiro de condutas (sessao_procedimento) é coleção DEPENDENTE do
+ * agregado: o get a carrega junto e a gravação a sincroniza na mesma
+ * transação do registro.
  */
 public class SessaoService {
 
@@ -82,13 +85,24 @@ public class SessaoService {
     // ============================================================================
     // CORE APPOINTMENT TRANSACTION CRUD & STATE GUARD VALS
     // ============================================================================
+    /**
+     * Sessão completa: a linha da agenda + registro do atendimento + roteiro
+     * de condutas. O roteiro é coleção dependente do agregado, então vem
+     * junto — quem carrega a Sessao pela sala já tem o estado do picklist sem
+     * uma segunda consulta orquestrada pela página.
+     */
     public Sessao get(Integer id) {
         if (id == null) {
             return null;
         }
+        Sessao sessao;
         try (Connection conn = DataSourceManager.getSql2o().open()) {
-            return conn.createQuery(QueryLoader.get("sessao.get")).addParameter("id", id).executeAndFetchFirst(Sessao.class);
+            sessao = conn.createQuery(QueryLoader.get("sessao.get")).addParameter("id", id).executeAndFetchFirst(Sessao.class);
         }
+        if (sessao != null) {
+            sessao.setProcedimentos(carregarRoteiro(id));
+        }
+        return sessao;
     }
 
     /**
@@ -132,27 +146,6 @@ public class SessaoService {
         try (Connection conn = DataSourceManager.getSql2o().open()) {
             return conn.createQuery(QueryLoader.get("sessao.getAllPorProfissional"))
                     .addParameter("profissionalId", profissionalId)
-                    .executeAndFetch(Sessao.class);
-        }
-    }
-
-    public List<Sessao> listarAgendaDoDia(LocalDate dataFiltro) {
-        return listarAgendaDoDia(dataFiltro, null);
-    }
-
-    /**
-     * Agenda do dia com filtro de nome do profissional encaminhado pela
-     * página (Column.setFilterBy + table.getFilters()). profissionalNome
-     * null/vazio retorna todos os profissionais do dia.
-     */
-    public List<Sessao> listarAgendaDoDia(LocalDate dataFiltro, String profissionalNome) {
-        LocalDateTime inicioDia = dataFiltro.atStartOfDay();
-        LocalDateTime fimDia = inicioDia.plusDays(1);
-        try (Connection conn = DataSourceManager.getSql2o().open()) {
-            return conn.createQuery(QueryLoader.get("sessao.findGridAgenda"))
-                    .addParameter("inicioDia", inicioDia)
-                    .addParameter("fimDia", fimDia)
-                    .addParameter("profissionalNome", profissionalNome)
                     .executeAndFetch(Sessao.class);
         }
     }
@@ -302,21 +295,55 @@ public class SessaoService {
     }
 
     /**
-     * Grava o registro do atendimento na própria sessão (update parcial:
-     * somente os textos clínicos). É esta GRAVAÇÃO que inicia o atendimento:
-     * a primeira gravação a partir da fila (AGENDADA/CONFIRMADA) avança a
-     * sessão para EM_ANDAMENTO e marca o início real do atendimento
-     * (registro_dt_inicio, preservado via COALESCE) na mesma transação.
-     * Gravações seguintes apenas atualizam os textos; em REALIZADA permite
-     * a consolidação sem nova transição.
+     * Grava o registro do atendimento a partir do MODELO carregado/editado na
+     * sala (textos clínicos + roteiro de condutas) — uma transação, um UPDATE
+     * do registro, um sync do roteiro. É esta GRAVAÇÃO que inicia o
+     * atendimento: a primeira gravação a partir da fila
+     * (AGENDADA/CONFIRMADA) avança a sessão para EM_ANDAMENTO e marca o
+     * início real (registro_dt_inicio, preservado via COALESCE). Em REALIZADA
+     * consolida o texto sem nova transição.
      */
-    public Sessao salvarRegistro(Integer sessaoId, Sessao registro) {
-        if (registro == null) {
-            throw new IllegalArgumentException("Operação cancelada: registro vazio.");
+    public Sessao salvarRegistro(Sessao sessao) {
+        return gravarAtendimento(sessao, false);
+    }
+
+    /**
+     * Fim da sessão na sala: grava o registro do MODELO da tela (textos +
+     * roteiro) E avança para REALIZADA marcando o fim real — tudo na mesma
+     * transação. A conduta exigida é a do MODELO: o que o profissional
+     * digitou conta mesmo sem um Salvar anterior (o POST do Finalizar bind
+     * as textareas da mesma tela). A regra de exibição mora no agregado
+     * (Sessao.podeFinalizar); o guard aqui revalida a situação do BANCO.
+     */
+    public Sessao finalizarAtendimento(Sessao sessao) {
+        return gravarAtendimento(sessao, true);
+    }
+
+    /**
+     * Núcleo único da sala: valida a máquina de estados sobre a situação
+     * GRAVADA (nunca a do request), grava registro + roteiro e aplica a
+     * transição pedida (iniciar, quando ainda está na fila; finalizar, quando
+     * o botão foi o Finalizar) — tudo em uma transação.
+     */
+    private Sessao gravarAtendimento(Sessao sessao, boolean finalizar) {
+        if (sessao == null || sessao.getId() == null) {
+            throw new IllegalArgumentException("Operação cancelada: sessão não informada.");
         }
+        Integer sessaoId = sessao.getId();
         try (Connection conn = DataSourceManager.getSql2o().beginTransaction()) {
             SessaoSituacao atual = carregarSituacao(conn, sessaoId);
             validarEstadoParaRegistro(atual);
+
+            if (finalizar) {
+                if (!atual.podeTransicionarPara(SessaoSituacao.REALIZADA)) {
+                    throw new IllegalStateException(
+                            "Não é possível finalizar atendimento a partir de " + atual + ".");
+                }
+                if (!sessao.possuiConduta()) {
+                    throw new IllegalStateException(
+                            "Finalização exige a conduta registrada do paciente.");
+                }
+            }
 
             if (atual == SessaoSituacao.AGENDADA || atual == SessaoSituacao.CONFIRMADA) {
                 if (!atual.podeTransicionarPara(SessaoSituacao.EM_ANDAMENTO)) {
@@ -328,60 +355,80 @@ public class SessaoService {
                         .executeUpdate();
             }
 
+            if (finalizar) {
+                conn.createQuery(QueryLoader.get("sessao.finalizarAtendimento"))
+                        .addParameter("id", sessaoId)
+                        .executeUpdate();
+            }
+
             conn.createQuery(QueryLoader.get("sessao.updateRegistro"))
                     .addParameter("id", sessaoId)
-                    .addParameter("registroRelato", registro.getRegistroRelato())
-                    .addParameter("registroAvaliacao", registro.getRegistroAvaliacao())
-                    .addParameter("registroConduta", registro.getRegistroConduta())
-                    .addParameter("registroOrientacoes", registro.getRegistroOrientacoes())
-                    .executeUpdate();
-            conn.commit();
-            return get(sessaoId);
-        }
-    }
-
-    /**
-     * Pré-condição de finalização visível na sala: a sessão possui conduta
-     * registrada — mesmo critério do guard de {@link #finalizarAtendimento}.
-     */
-    public boolean podeFinalizar(Integer sessaoId) {
-        Sessao registro = get(sessaoId);
-        return registro != null && possuiConduta(registro);
-    }
-
-    /**
-     * Fim da sessão na sala: valida a máquina de estados, exige a conduta
-     * registrada e avança a sessão para REALIZADA marcando o fim real do
-     * atendimento (registro_dt_fim) na mesma transação.
-     */
-    public Sessao finalizarAtendimento(Integer sessaoId) {
-        try (Connection conn = DataSourceManager.getSql2o().beginTransaction()) {
-            SessaoSituacao atual = carregarSituacao(conn, sessaoId);
-            if (!atual.podeTransicionarPara(SessaoSituacao.REALIZADA)) {
-                throw new IllegalStateException(
-                        "Não é possível finalizar atendimento a partir de " + atual + ".");
-            }
-
-            Sessao gravada = conn.createQuery(QueryLoader.get("sessao.get"))
-                    .addParameter("id", sessaoId)
-                    .executeAndFetchFirst(Sessao.class);
-            if (gravada == null || !possuiConduta(gravada)) {
-                throw new IllegalStateException(
-                        "Finalização exige a conduta registrada do paciente.");
-            }
-
-            conn.createQuery(QueryLoader.get("sessao.finalizarAtendimento"))
-                    .addParameter("id", sessaoId)
+                    .addParameter("registroRelato", sessao.getRegistroRelato())
+                    .addParameter("registroAvaliacao", sessao.getRegistroAvaliacao())
+                    .addParameter("registroConduta", sessao.getRegistroConduta())
+                    .addParameter("registroOrientacoes", sessao.getRegistroOrientacoes())
                     .executeUpdate();
 
+            // Roteiro: coleção DEPENDENTE do agregado — o que está no modelo é
+            // o estado do roteiro, e entra na MESMA transação do registro.
+            // null = agregado carregado sem o roteiro (não sincroniza).
+            if (sessao.getProcedimentos() != null) {
+                sincronizarRoteiro(conn, sessaoId,
+                        sessao.getProcedimentos().stream()
+                                .map(SessaoProcedimento::getProcedimentoId)
+                                .toList());
+            }
+
             conn.commit();
-            return get(sessaoId);
         }
+        return get(sessaoId);
     }
 
     // =========================================================================
     // Internos
     // =========================================================================
+
+    /** Roteiro da sessão com o grafo do catálogo (procedimento + modalidade). */
+    private List<SessaoProcedimento> carregarRoteiro(Integer sessaoId) {
+        try (Connection conn = DataSourceManager.getSql2o().open()) {
+            return conn.createQuery(QueryLoader.get("sessao_procedimento.getBySessao"))
+                    .addParameter("sessaoId", sessaoId)
+                    .executeAndFetch(SessaoProcedimento.class);
+        }
+    }
+
+    /**
+     * Sincroniza o roteiro com as condutas do modelo: remove as que saíram e
+     * insere as que entraram, SEM abrir conexão nem comitar — roda na
+     * transação de gravarAtendimento (registro + situação + roteiro: ou tudo,
+     * ou nada). Condutas novas entram sem observação (a execução fica no
+     * registro_conduta).
+     */
+    private void sincronizarRoteiro(Connection conn, Integer sessaoId, List<Integer> escolhidos) {
+        List<SessaoProcedimento> roteiro = conn.createQuery(QueryLoader.get("sessao_procedimento.getBySessao"))
+                .addParameter("sessaoId", sessaoId)
+                .executeAndFetch(SessaoProcedimento.class);
+
+        for (SessaoProcedimento item : roteiro) {
+            if (!escolhidos.contains(item.getProcedimentoId())) {
+                conn.createQuery(QueryLoader.get("sessao_procedimento.delete"))
+                        .addParameter("sessaoId", sessaoId)
+                        .addParameter("procedimentoId", item.getProcedimentoId())
+                        .executeUpdate();
+            }
+        }
+        for (Integer idEscolhido : escolhidos) {
+            boolean jaNoRoteiro = roteiro.stream()
+                    .anyMatch(item -> idEscolhido.equals(item.getProcedimentoId()));
+            if (!jaNoRoteiro) {
+                conn.createQuery(QueryLoader.get("sessao_procedimento.insert"))
+                        .addParameter("sessaoId", sessaoId)
+                        .addParameter("procedimentoId", idEscolhido)
+                        .addParameter("observacao", (Object) null)
+                        .executeUpdate();
+            }
+        }
+    }
 
     private SessaoSituacao carregarSituacao(Connection conn, Integer sessaoId) {
         String situacaoStr = conn.createQuery(QueryLoader.get("sessao.getSituacao"))
@@ -391,11 +438,5 @@ public class SessaoService {
             throw new IllegalArgumentException("Sessão informada não existe.");
         }
         return SessaoSituacao.valueOf(situacaoStr);
-    }
-
-    /** Conduta registrada: critério único usado pelo guard e pela pré-condição. */
-    private static boolean possuiConduta(Sessao registro) {
-        String conduta = registro.getRegistroConduta();
-        return conduta != null && !conduta.trim().isEmpty();
     }
 }
