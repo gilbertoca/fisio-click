@@ -22,6 +22,12 @@ import org.apache.click.util.ClickUtils;
  *
  * Both are set in onInit(), which is the correct lifecycle phase for
  * request-dependent initialization.
+ *
+ * Em modo production o MenuFactory devolve um menu em cache estático,
+ * compartilhado por todas as requisições: o menu NÃO deve ser alterado aqui.
+ * O link Entrar/Sair é montado pelo border-template a partir de
+ * $authenticated. (Adicionar o item ao menu a cada onInit acumulava uma
+ * entrada nova por requisição.)
  */
 public abstract class BorderPage extends Page {
 
@@ -34,9 +40,10 @@ public abstract class BorderPage extends Page {
     private static final String FLASH_MENSAGEM = "flash.mensagem";
 
     /** AccessController do menu: criado uma vez e propagado a TODOS os itens
-     * — os do menu.xml (via MenuFactory) e os construídos aqui (Entrar/Sair).
-     * Menu sem controller estoura IllegalStateException no isUserInRoles()
-     * da macro e o template renderiza pela metade. */
+     * do menu.xml (via MenuFactory), que filtra cada item com roles= pela
+     * permissão do usuário. Menu sem controller estoura
+     * IllegalStateException no isUserInRoles() da macro e o template
+     * renderiza pela metade. */
     private final PermissaoAccessController menuAccessController = new PermissaoAccessController();
 
     public BorderPage() {
@@ -55,14 +62,8 @@ public abstract class BorderPage extends Page {
                 && ctx.getSessionAttribute(AuthenticatedPage.SESSION_USER) != null;
         addModel("authenticated", Boolean.valueOf(authenticated));
 
-        Menu authMenu = new Menu(authenticated ? "Sair" : "Entrar");
-        authMenu.setPath(authenticated ? "logout.htm" : "login.htm");
-        authMenu.setImageSrc("/assets/images/user.svg"); // ícone do menu de autenticação
-        // O item de autenticação é público: recurso null no contrato do
-        // AccessController. Mas PRECISA do controller — sem ele, o
-        // isUserInRoles() da macro estoura e o template renderiza pela metade.
-        authMenu.setAccessController(menuAccessController);
-        rootMenu.add(authMenu);
+        // O menu raiz é compartilhado/cacheado pelo MenuFactory: só registre
+        // o controle, sem acrescentar itens (ver javadoc da classe).
         addControl(rootMenu);
         
         // Default page title. Pages can override by calling

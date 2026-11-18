@@ -11,6 +11,10 @@
         <filtering>true</filtering>
         <directory>src/main/resources</directory>
       </resource>
+      <resource>
+        <targetPath>webapp</targetPath>
+        <directory>src/main/webapp</directory>
+      </resource>
     </resources>
     <testResources>
       <testResource>
@@ -23,7 +27,7 @@
       <plugin>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-maven-plugin</artifactId>
-        <version>8.5.4</version>
+        <version>${flyway.version}</version>
         <dependencies>
           <dependency>
             <groupId>com.h2database</groupId>
@@ -33,9 +37,7 @@
         </dependencies>
         <configuration>
           <url>${db.url}</url>
-          <schemas>
-            <schema>fisio</schema>
-          </schemas>
+          <driver>${db.driver}</driver>
           <user>sa</user>
           <password>sa</password>
           <outOfOrder>true</outOfOrder>
@@ -131,13 +133,14 @@
   </dependencies>
   <properties>
     <db.password>sa</db.password>
-    <jetty.version>12.0.16</jetty.version>
+    <flyway.version>10.10.0</flyway.version>
+    <jetty.version>12.0.37</jetty.version>
     <db.user>sa</db.user>
     <servlet-api.version>[4.0.1,)</servlet-api.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <server.port>8080</server.port>
     <junit.version>[4.,)</junit.version>
-    <db.url>jdbc:h2:file:./data/fisio;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;INIT=CREATE SCHEMA IF NOT EXISTS FISIO;DATABASE_TO_LOWER=TRUE;</db.url>
+    <db.url>jdbc:h2:file:./data/fisio;MODE=PostgreSQL;INIT=CREATE SCHEMA IF NOT EXISTS FISIO;DATABASE_TO_LOWER=TRUE;</db.url>
     <click.version>2.8.1-SNAPSHOT</click.version>
     <maven.compiler.source>17</maven.compiler.source>
     <h2.version>2.1.214</h2.version>

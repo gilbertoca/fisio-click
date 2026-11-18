@@ -1,3 +1,6 @@
 /data/
 /target/
 /src/main/webapp/click/
+/config/
+*.p12
+dependency-reduced-pom.xml

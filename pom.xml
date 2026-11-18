@@ -12,7 +12,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <click.version>2.8.1-SNAPSHOT</click.version>
         <servlet-api.version>[4.0.1,)</servlet-api.version>
-        <jetty.version>12.0.16</jetty.version>
+        <jetty.version>12.0.37</jetty.version>
         <junit.version>[4.,)</junit.version>
         <h2.version>2.1.214</h2.version>        
         <flyway.version>10.10.0</flyway.version>        
@@ -107,6 +107,13 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
+            <!-- Webapp do Click empacotada no jar em /webapp (o shade inclui;
+                 o WebAppContext le direto do classpath, sem pasta externa) -->
+            <resource>
+                <directory>src/main/webapp</directory>
+                <targetPath>webapp</targetPath>
+                <filtering>false</filtering>
+            </resource>
         </resources>
         <testResources>
             <testResource>
@@ -183,6 +190,7 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Executable / Fat JAR com a webapp embutida em /webapp -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
