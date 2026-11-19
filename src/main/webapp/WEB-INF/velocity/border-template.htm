@@ -22,6 +22,7 @@
                 <li><strong>Fisio</strong></li>
                 #parse("/WEB-INF/velocity/macro.vm")
                 #renderMenu($rootMenu)
+                #renderMenuSessao($authenticated)
             </ul>
         </nav>
     </header>

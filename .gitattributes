@@ -1,0 +1,4 @@
+# Batch files do Windows precisam de CRLF no checkout, independente de
+# core.autocrlf. O índice do Git continua normalizando para LF.
+*.bat text eol=crlf
+*.cmd text eol=crlf

@@ -33,6 +33,22 @@
 #end
 
 #**
+ * Item Entrar/Sair do menu.
+ *
+ * É dinâmico (depende da sessão) e por isso NÃO entra no menu.xml nem no
+ * rootMenu: o MenuFactory cacheia o menu estaticamente em produção e cada
+ * request acrescentaria mais um item ao mesmo objeto (Entrar/Sair repetidos).
+ * Renderizado direto no border-template a partir de $authenticated.
+ *#
+#macro(renderMenuSessao $autenticado)
+  #if($autenticado)
+    <li><a href="$context/logout.htm"><img border="0" class="link" alt="Sair" src="$context/assets/images/user.svg">Sair</a></li>
+  #else
+    <li><a href="$context/login.htm"><img border="0" class="link" alt="Entrar" src="$context/assets/images/user.svg">Entrar</a></li>
+  #end
+#end
+
+#**
  * Botão de criação ("Novo registro") do cabeçalho das listagens: form GET +
  * button nativo do HTML — navega para a página de edição sem JavaScript e
  * sem CSS extra (o Bahunya estiliza o elemento button). Centralizado aqui:
