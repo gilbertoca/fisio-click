@@ -78,7 +78,14 @@ public class Sql2oAgendaDeepGraphTest {
 
         try (Connection conn = DataSourceManager.getSql2o().open()) {
         List<Sessao> agenda = conn.createQuery(sql)
+                .addParameter("inicio", (Object) null)
+                .addParameter("clienteNome", (Object) null)
                 .addParameter("profissionalNome", (Object) null) // sem filtro: todos os registros
+                .addParameter("modalidadeNome", (Object) null)
+                .addParameter("tipoExato", (Object) null)
+                .addParameter("tipoLike", (Object) null)
+                .addParameter("situacaoExato", (Object) null)
+                .addParameter("situacaoLike", (Object) null)
                 .executeAndFetch(Sessao.class);
 
             assertNotNull("A grade da agenda não deve ser nula", agenda);

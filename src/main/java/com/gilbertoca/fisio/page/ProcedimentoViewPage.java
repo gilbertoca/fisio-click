@@ -15,11 +15,12 @@ import org.apache.click.dataprovider.DataProvider;
 import org.apache.click.extras.control.LinkDecorator;
 
 /**
- * Catálogo de procedimentos: listagem com filtro por nome, encaminhado ao
- * service (procedimentoService.getAllLikeNome(filters.get("nome")) — padrão
- * das listagens). Delete com guard: procedimento usado em roteiro clínico é
- * histórico do atendimento e não sai do catálogo — o service bloqueia
- * (IllegalStateException) e a página avisa em $mensagem, sem error page.
+ * Catálogo de procedimentos: listagem com filtros por nome, código RBPF/TUSS
+ * e modalidade, encaminhados ao service
+ * (procedimentoService.getAllFiltrado(...) — padrão das listagens). Delete com
+ * guard: procedimento usado em roteiro clínico é histórico do atendimento e
+ * não sai do catálogo — o service bloqueia (IllegalStateException) e a página
+ * avisa em $mensagem, sem error page.
  */
 public class ProcedimentoViewPage extends AuthenticatedPage {
 
@@ -42,8 +43,14 @@ public class ProcedimentoViewPage extends AuthenticatedPage {
         nomeCol.setFilterBy("nome");
         table.addColumn(nomeCol);
 
-        table.addColumn(new Column("codigoTuss", "Código RBPF/TUSS"));
-        table.addColumn(new Column("modalidade.nome", "Modalidade"));
+        Column codigoCol = new Column("codigoTuss", "Código RBPF/TUSS");
+        codigoCol.setFilterBy("codigo");
+        table.addColumn(codigoCol);
+
+        Column modalidadeCol = new Column("modalidade.nome", "Modalidade");
+        modalidadeCol.setFilterBy("modalidade.nome");
+        table.addColumn(modalidadeCol);
+
         table.addColumn(new Column("situacao", "Situação"));
 
         Column actionsCol = new Column("actions", "Ações");
@@ -67,7 +74,10 @@ public class ProcedimentoViewPage extends AuthenticatedPage {
             @Override
             public List<Procedimento> getData() {
                 Map<String, String> filters = table.getFilters();
-                return procedimentoService.getAllLikeNome(filters.get("nome"));
+                return procedimentoService.getAllFiltrado(
+                        filters.get("nome"),
+                        filters.get("codigo"),
+                        filters.get("modalidade.nome"));
             }
         });
 

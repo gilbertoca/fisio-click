@@ -11,6 +11,7 @@ import org.sql2o.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import com.gilbertoca.fisio.model.enums.PagamentoOrigem;
 import com.gilbertoca.fisio.model.enums.SessaoSituacao;
 import com.gilbertoca.fisio.model.enums.SessaoTipo;
@@ -28,6 +29,8 @@ public class SessaoServiceTest {
     private static Integer idProfissional;
     private static Integer idModalidade;
     private static Integer idProcedimentoSala;
+    /** Sequência para CPF/registro únicos nas sessões criadas pelos testes de filtro. */
+    private static int sequenciaFiltro = 0;
 
     @BeforeClass
     public static void setUp() {
@@ -478,6 +481,76 @@ public class SessaoServiceTest {
         } catch (IllegalStateException ex) {
             assertTrue(ex.getMessage().contains("outra modalidade"));
         }
+    }
+
+    @Test
+    public void deveFiltrarAgendaPorTodasAsColunas() {
+        sessaoService = new SessaoService();
+
+        Integer id = agendar("Filtro Cliente Alfa", "Filtro Profissional Alfa", "Filtro Modalidade Alfa",
+                LocalDateTime.of(2032, 3, 14, 10, 15), SessaoTipo.REAVALIACAO, SessaoSituacao.CONFIRMADA);
+
+        assertFiltroUnico(Map.of("cliente.nome", "cliente alfa"), id);
+        assertFiltroUnico(Map.of("profissional.nome", "PROFISSIONAL ALFA"), id);
+        assertFiltroUnico(Map.of("modalidade.nome", "modalidade alfa"), id);
+        assertFiltroUnico(Map.of("inicio", "14/03/2032"), id);
+        assertFiltroUnico(Map.of("inicio", "14/03/2032 10:15"), id);
+        assertFiltroUnico(Map.of("cliente.nome", "Filtro Cliente Alfa", "tipo", "Reavaliação"), id);
+        assertFiltroUnico(Map.of("cliente.nome", "Filtro Cliente Alfa", "tipo", "reavaliacao"), id);
+        assertFiltroUnico(Map.of("cliente.nome", "Filtro Cliente Alfa", "situacao", "Confirmada"), id);
+
+        // "Avaliação" não pode casar também com "Reavaliação" (igualdade no
+        // rótulo reconhecido), e "Agendada" casa com o rótulo sem acento.
+        Integer idAvaliacao = agendar("Filtro Cliente Beta", "Filtro Profissional Beta", "Filtro Modalidade Beta",
+                LocalDateTime.of(2032, 3, 15, 11, 0), SessaoTipo.AVALIACAO, SessaoSituacao.AGENDADA);
+        assertFiltroUnico(Map.of("cliente.nome", "Filtro Cliente Beta", "tipo", "Avaliação"), idAvaliacao);
+        assertFiltroUnico(Map.of("cliente.nome", "Filtro Cliente Beta", "situacao", "Agendada"), idAvaliacao);
+
+        assertTrue(sessaoService.listarAgendaFiltrada(Map.of("cliente.nome", "inexistente-xyz")).isEmpty());
+    }
+
+    /** Sessão avulsa com atores próprios para isolar os filtros por nome. */
+    private Integer agendar(String clienteNome, String profissionalNome, String modalidadeNome,
+            LocalDateTime inicio, SessaoTipo tipo, SessaoSituacao situacao) {
+        int n = ++sequenciaFiltro;
+        try (Connection conn = DataSourceManager.getSql2o().beginTransaction()) {
+            Integer cliente = conn.createQuery(
+                    "INSERT INTO fisio.cliente (nome, dt_nascimento, telefone, cliente_situacao) "
+                    + "VALUES (:nome, '1990-01-01', '8690000000', 'ATIVO')", true)
+                    .addParameter("nome", clienteNome)
+                    .executeUpdate().getKey(Integer.class);
+            Integer profissional = conn.createQuery(
+                    "INSERT INTO fisio.profissional (cpf, nome, dt_nascimento, telefone, registro_numero, registro_orgao) "
+                    + "VALUES (:cpf, :nome, '1980-01-01', '8690000000', :registro, 'CREFITO-3')", true)
+                    .addParameter("cpf", String.format("8%010d", n))
+                    .addParameter("nome", profissionalNome)
+                    .addParameter("registro", "FILTRO-" + n)
+                    .executeUpdate().getKey(Integer.class);
+            Integer modalidade = conn.createQuery(
+                    "INSERT INTO fisio.modalidade (nome, valor_base) VALUES (:nome, 100.00)", true)
+                    .addParameter("nome", modalidadeNome)
+                    .executeUpdate().getKey(Integer.class);
+            Integer sessao = conn.createQuery(
+                    "INSERT INTO fisio.sessao (cliente_id, profissional_id, modalidade_id, dt_hora_inicio, dt_hora_fim, "
+                    + "sessao_tipo, pagamento_origem, sessao_situacao) "
+                    + "VALUES (:cliente, :profissional, :modalidade, :inicio, :fim, :tipo, 'PARTICULAR', :situacao)", true)
+                    .addParameter("cliente", cliente)
+                    .addParameter("profissional", profissional)
+                    .addParameter("modalidade", modalidade)
+                    .addParameter("inicio", inicio)
+                    .addParameter("fim", inicio.plusMinutes(50))
+                    .addParameter("tipo", tipo.name())
+                    .addParameter("situacao", situacao.name())
+                    .executeUpdate().getKey(Integer.class);
+            conn.commit();
+            return sessao;
+        }
+    }
+
+    private void assertFiltroUnico(Map<String, String> filtros, Integer idEsperado) {
+        List<Sessao> resultado = sessaoService.listarAgendaFiltrada(filtros);
+        assertEquals("Filtro " + filtros + " deveria isolar uma sessão", 1, resultado.size());
+        assertEquals(idEsperado, resultado.get(0).getId());
     }
 
     private Sessao novaSessaoGrupo(Integer clienteIdRef, Integer modalidadeIdRef, LocalDateTime inicio) {

@@ -38,11 +38,26 @@ public class ProcedimentoService {
     }
 
     public List<Procedimento> getAllLikeNome(String nome) {
+        return getAllFiltrado(nome, null, null);
+    }
+
+    /**
+     * Catálogo filtrado pelas colunas da listagem: nome, código RBPF/TUSS e
+     * modalidade. Texto em branco é ignorado na query.
+     */
+    public List<Procedimento> getAllFiltrado(String nome, String codigo, String modalidadeNome) {
         try (Connection conn = DataSourceManager.getSql2o().open()) {
-            return conn.createQuery(QueryLoader.get("procedimento.getAllLikeNome"))
-                    .addParameter("nome", nome)
+            return conn.createQuery(QueryLoader.get("procedimento.getAllFiltrado"))
+                    .addParameter("nome", textoOuNulo(nome))
+                    .addParameter("codigo", textoOuNulo(codigo))
+                    .addParameter("modalidadeNome", textoOuNulo(modalidadeNome))
                     .executeAndFetch(Procedimento.class);
         }
+    }
+
+    /** Texto de filtro: em branco vira null (condição desligada na query). */
+    private static String textoOuNulo(String texto) {
+        return texto == null || texto.isBlank() ? null : texto.trim();
     }
 
     /**

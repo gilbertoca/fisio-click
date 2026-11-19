@@ -27,9 +27,10 @@ import org.apache.click.util.HtmlStringBuffer;
  * Prototype: o "profissional logado" é um atributo de sessão
  * (SESSION_PROFISSIONAL_ID). Quando a autorização por papel
  * (admin/gerencia/profissional) for modelada, este atributo passa a ser
- * derivado do papel no login. Filtro por nome do profissional na tabela,
- * encaminhado ao service. O filtro do cliente é feito na sala, na página de
- * atendimento (SessaoProntuarioEditPage).
+ * derivado do papel no login. Filtros em todas as colunas de dados (data/hora,
+ * cliente, profissional, modalidade, tipo e situação), encaminhados ao service
+ * (sessaoService.listarAgendaFiltrada(table.getFilters())). O filtro do cliente
+ * é feito na sala, na página de atendimento (SessaoProntuarioEditPage).
  *
  * Coluna de ações via LinkDecorator (click-extras), dirigida pela situação da
  * sessão: Atender para fila + EM_ANDAMENTO, Editar somente para a fila,
@@ -70,16 +71,28 @@ public class SessaoProntuarioViewPage extends AuthenticatedPage {
         // do Click no lugar do Decorator manual.
         inicioCol.setFormat("{0,date,dd/MM/yyyy HH:mm}");
         inicioCol.setSortable(true);
+        inicioCol.setFilterBy("inicio");
         table.addColumn(inicioCol);
 
         Column profissionalCol = comLinkProfissional(new Column("profissional.nome", "Profissional"));
         profissionalCol.setFilterBy("profissional.nome");
         table.addColumn(profissionalCol);
 
-        table.addColumn(comLinkCliente(new Column("cliente.nome", "Cliente")));
-        table.addColumn(new Column("modalidade.nome", "Modalidade"));
-        table.addColumn(new Column("sessaoTipo", "Tipo"));
-        table.addColumn(new Column("situacao", "Situação"));
+        Column clienteCol = comLinkCliente(new Column("cliente.nome", "Cliente"));
+        clienteCol.setFilterBy("cliente.nome");
+        table.addColumn(clienteCol);
+
+        Column modalidadeCol = new Column("modalidade.nome", "Modalidade");
+        modalidadeCol.setFilterBy("modalidade.nome");
+        table.addColumn(modalidadeCol);
+
+        Column tipoCol = new Column("sessaoTipo", "Tipo");
+        tipoCol.setFilterBy("tipo");
+        table.addColumn(tipoCol);
+
+        Column situacaoCol = new Column("situacao", "Situação");
+        situacaoCol.setFilterBy("situacao");
+        table.addColumn(situacaoCol);
 
         Column actionsCol = new Column("actions", "Ações");
         // Sem propriedade "actions" no Sessao: ordenar por esta coluna estouraria
@@ -117,7 +130,7 @@ public class SessaoProntuarioViewPage extends AuthenticatedPage {
             @Override
             public List<Sessao> getData() {
                 Map<String, String> filters = table.getFilters();
-                return sessaoService.listarAgenda(filters.get("profissional.nome"));
+                return sessaoService.listarAgendaFiltrada(filters);
             }
         });
 

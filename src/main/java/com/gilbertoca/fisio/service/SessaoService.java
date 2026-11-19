@@ -6,8 +6,12 @@ import com.gilbertoca.fisio.model.Profissional;
 import com.gilbertoca.fisio.model.Sessao;
 import com.gilbertoca.fisio.model.SessaoProcedimento;
 import com.gilbertoca.fisio.model.enums.SessaoSituacao;
+import com.gilbertoca.fisio.model.enums.SessaoTipo;
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import com.gilbertoca.fisio.infra.DataSourceManager;
 import com.gilbertoca.fisio.infra.QueryLoader;
 import org.sql2o.Connection;
@@ -107,14 +111,83 @@ public class SessaoService {
 
     /**
      * Agenda: TODOS os registros de sessão (atual e futura), ordenados pela
-     * última inserção — as recém-agendadas aparecem no topo. O filtro de nome
-     * do profissional vem da tabela (Column.setFilterBy + table.getFilters()).
+     * última inserção — as recém-agendadas aparecem no topo. Atalho para a
+     * listagem filtrada apenas pelo nome do profissional.
      */
     public List<Sessao> listarAgenda(String profissionalNome) {
+        return listarAgendaFiltrada(
+                textoOuNulo(profissionalNome) == null
+                        ? Map.of()
+                        : Map.of("profissional.nome", profissionalNome));
+    }
+
+    /**
+     * Agenda com os filtros de coluna da Table (Column.setFilterBy): data/hora,
+     * cliente, profissional, modalidade, tipo e situação. Texto em branco é
+     * ignorado. Tipo e situação aceitam o rótulo exibido (com ou sem acento),
+     * o nome persistido ou um trecho dele.
+     */
+    public List<Sessao> listarAgendaFiltrada(Map<String, String> filtros) {
+        Map<String, String> f = filtros == null ? Map.of() : filtros;
+        FiltroEnum tipo = filtroEnum(SessaoTipo.class, f.get("tipo"));
+        FiltroEnum situacao = filtroEnum(SessaoSituacao.class, f.get("situacao"));
         try (Connection conn = DataSourceManager.getSql2o().open()) {
             return conn.createQuery(QueryLoader.get("sessao.getAll"))
-                    .addParameter("profissionalNome", profissionalNome)
+                    .addParameter("inicio", textoOuNulo(f.get("inicio")))
+                    .addParameter("clienteNome", textoOuNulo(f.get("cliente.nome")))
+                    .addParameter("profissionalNome", textoOuNulo(f.get("profissional.nome")))
+                    .addParameter("modalidadeNome", textoOuNulo(f.get("modalidade.nome")))
+                    .addParameter("tipoExato", tipo.exato)
+                    .addParameter("tipoLike", tipo.like)
+                    .addParameter("situacaoExato", situacao.exato)
+                    .addParameter("situacaoLike", situacao.like)
                     .executeAndFetch(Sessao.class);
+        }
+    }
+
+    /** Texto de filtro: em branco vira null (condição desligada na query). */
+    private static String textoOuNulo(String texto) {
+        return texto == null || texto.isBlank() ? null : texto.trim();
+    }
+
+    /**
+     * Traduz o texto digitado no filtro para o valor persistido do enum.
+     * Rótulo ou nome completo vira igualdade — evita que "Avaliação" case
+     * também com "Reavaliação"; texto parcial vira LIKE sobre o name().
+     */
+    private static <E extends Enum<E>> FiltroEnum filtroEnum(Class<E> tipo, String texto) {
+        String alvo = normalizar(texto);
+        if (alvo == null) {
+            return new FiltroEnum(null, null);
+        }
+        for (E constante : tipo.getEnumConstants()) {
+            if (alvo.equals(normalizar(constante.name()))
+                    || alvo.equals(normalizar(constante.toString()))) {
+                return new FiltroEnum(constante.name(), null);
+            }
+        }
+        return new FiltroEnum(null, alvo.replace(' ', '_'));
+    }
+
+    /** Minúsculas, sem acentos e com espaços colapsados. */
+    private static String normalizar(String texto) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+        return Normalizer.normalize(texto.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("\\s+", " ");
+    }
+
+    /** Par de filtros do enum: igualdade (rótulo reconhecido) ou trecho. */
+    private static final class FiltroEnum {
+        final String exato;
+        final String like;
+
+        FiltroEnum(String exato, String like) {
+            this.exato = exato;
+            this.like = like;
         }
     }
 

@@ -224,4 +224,54 @@ public class ProcedimentoServiceTest {
         assertTrue(sugestoesOutra.stream().anyMatch(p -> "Fita Elástica".equals(p.getNome())));
         assertFalse(sugestoesOutra.stream().anyMatch(p -> "Cadillac Barra".equals(p.getNome())));
     }
+
+    @Test
+    public void deveFiltrarPorCodigoEModalidade() {
+        procedimentoService = new ProcedimentoService();
+
+        Integer modalidadeA = novaModalidade("Filtro Modalidade A");
+        Integer modalidadeB = novaModalidade("Filtro Modalidade B");
+
+        criarProcedimento("Filtro Alfa", "131069999", modalidadeA);
+        criarProcedimento("Filtro Beta", "20101234", modalidadeB);
+
+        Integer idAlfa = procedimentoService.getAllLikeNome("Filtro Alfa").get(0).getId();
+        Integer idBeta = procedimentoService.getAllLikeNome("Filtro Beta").get(0).getId();
+
+        List<Procedimento> porCodigo = procedimentoService.getAllFiltrado(null, "131069", null);
+        assertTrue("Código parcial deve achar o procedimento Alfa.",
+                porCodigo.stream().anyMatch(p -> idAlfa.equals(p.getId())));
+        assertTrue("Código de outra faixa não deve trazer o Beta.",
+                porCodigo.stream().noneMatch(p -> idBeta.equals(p.getId())));
+
+        List<Procedimento> porModalidade = procedimentoService.getAllFiltrado(null, null, "modalidade a");
+        assertEquals(1, porModalidade.size());
+        assertEquals(idAlfa, porModalidade.get(0).getId());
+
+        List<Procedimento> combinado = procedimentoService.getAllFiltrado("alfa", "131069", "filtro modalidade a");
+        assertEquals(1, combinado.size());
+        assertEquals(idAlfa, combinado.get(0).getId());
+
+        assertTrue(procedimentoService.getAllFiltrado(null, "000000", null).isEmpty());
+    }
+
+    private Integer novaModalidade(String nome) {
+        try (Connection conn = DataSourceManager.getSql2o().open()) {
+            return conn.createQuery(
+                    "INSERT INTO fisio.modalidade (nome, duracao_minutos, valor_base, capacidade_simultanea) "
+                    + "VALUES (:nome, 50, 100.00, 1)", true)
+                    .addParameter("nome", nome)
+                    .executeUpdate().getKey(Integer.class);
+        }
+    }
+
+    private void criarProcedimento(String nome, String codigo, Integer modalidadeId) {
+        Procedimento p = new Procedimento();
+        p.setNome(nome);
+        p.setCodigoTuss(codigo);
+        Modalidade m = new Modalidade();
+        m.setId(modalidadeId);
+        p.setModalidade(m);
+        procedimentoService.create(p);
+    }
 }
