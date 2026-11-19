@@ -5,7 +5,7 @@ title Fisio
 
 rem Executa o sistema a partir desta pasta (%~dp0).
 rem Estrutura esperada:
-rem   fisio-system-sql2o.jar
+rem   fisio.jar
 rem   jdk-17...\bin\java.exe   (ou JAVA_HOME/PATH)
 rem   data\                    (criada aqui se faltar)
 rem
@@ -14,8 +14,8 @@ rem set "PORT=8081"
 
 cd /d "%~dp0"
 
-if not exist "fisio-system-sql2o.jar" (
-    echo [ERRO] fisio-system-sql2o.jar nao encontrado em "%~dp0".
+if not exist "fisio.jar" (
+    echo [ERRO] fisio.jar nao encontrado em "%~dp0".
     pause
     exit /b 1
 )
@@ -40,5 +40,5 @@ if not defined JAVA_BIN (
 if not defined JAVA_OPTS set "JAVA_OPTS=-Dfile.encoding=UTF-8"
 
 echo Iniciando Fisio com: "%JAVA_BIN%"
-"%JAVA_BIN%" %JAVA_OPTS% -jar "fisio-system-sql2o.jar"
+"%JAVA_BIN%" %JAVA_OPTS% -jar "fisio.jar"
 pause
