@@ -31,7 +31,7 @@ public class ProcedimentoEditPage extends AuthenticatedPage {
 
     final Form form = new Form("form");
     final TextField nome = new TextField("nome", "Nome:", true);
-    final TextField codigoTuss = new TextField("codigoTuss", "Código TUSS (opcional):", false);
+    final TextField codigoTuss = new TextField("codigoTuss", "Código RBPF/TUSS (opcional):", false);
     final Select selectModalidade = new Select("selectModalidade", "Modalidade (opcional):", false);
     final Select selectSituacao = new Select("selectSituacao", "Situação:", true);
 

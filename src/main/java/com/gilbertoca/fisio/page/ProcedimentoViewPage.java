@@ -42,7 +42,7 @@ public class ProcedimentoViewPage extends AuthenticatedPage {
         nomeCol.setFilterBy("nome");
         table.addColumn(nomeCol);
 
-        table.addColumn(new Column("codigoTuss", "Código TUSS"));
+        table.addColumn(new Column("codigoTuss", "Código RBPF/TUSS"));
         table.addColumn(new Column("modalidade.nome", "Modalidade"));
         table.addColumn(new Column("situacao", "Situação"));
 

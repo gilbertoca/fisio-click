@@ -54,7 +54,7 @@ public class ModalidadeProcedimentoViewPage extends AuthenticatedPage {
         table.setPaginator(new TablePaginator(table));
 
         table.addColumn(new Column("nome", "Nome"));
-        table.addColumn(new Column("codigoTuss", "Código TUSS"));
+        table.addColumn(new Column("codigoTuss", "Código RBPF/TUSS"));
         table.addColumn(new Column("situacao", "Situação"));
 
         // Ações: Editar (o procedimento, na edição do catálogo)

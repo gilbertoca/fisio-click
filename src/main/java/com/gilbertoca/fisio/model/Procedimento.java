@@ -15,7 +15,7 @@ public class Procedimento implements Serializable {
 
     private Integer id;
     private String nome;
-    /** Código TUSS opcional — útil para convênios. */
+    /** Código de referência RBPF (COFFITO) ou TUSS — útil para convênios. */
     private String codigoTuss;
     private ProcedimentoSituacao situacao;
     private Modalidade modalidade;
