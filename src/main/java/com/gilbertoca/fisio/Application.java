@@ -21,16 +21,19 @@ import com.gilbertoca.fisio.infra.DataSourceManager;
  * Bootstrap do servidor embarcado.
  *
  * A webapp vai dentro do jar (<code>/webapp/</code>) e é servida direto do
- * classpath, então a distribuição é um único arquivo. O banco H2 fica em
- * <code>&lt;appHome&gt;/data</code>, onde <code>appHome</code> é a pasta do
- * jar (ou <code>APP_HOME</code>). Essa pasta não é criada aqui: se faltar, a
- * aplicação para e avisa. Para usar outro banco/pasta, defina
- * <code>DB_URL</code>.
+ * classpath. O jar é distribuído dentro de uma pasta com o banco H2
+ * (<code>data/</code>), o <code>run.bat</code> e o
+ * <code>application.properties</code>; o build monta essa pasta em
+ * <code>shade/</code>. O banco fica em <code>&lt;appHome&gt;/data</code>, onde
+ * <code>appHome</code> é a pasta do jar (ou <code>APP_HOME</code>). Essa pasta
+ * não é criada aqui: se faltar, a aplicação para e avisa. Para usar outro
+ * banco/pasta, defina <code>DB_URL</code>.
  *
  * Configuração: variável de ambiente &gt; <code>data/application.properties</code>
- * &gt; padrões empacotados no jar. O arquivo fica em <code>data/</code> porque
- * é a pasta gravável da instância e não é versionada (segredos e certificado
- * ficam fora do git).
+ * &gt; padrões empacotados no jar. O arquivo da instância fica em
+ * <code>data/</code>, junto do banco, e não é versionado (segredos e
+ * certificado ficam fora do git); o modelo fica em
+ * <code>src/main/config</code>.
  *
  * HTTPS é opcional e substitui o HTTP na mesma <code>PORT</code> quando
  * <code>tls.keystore</code>/<code>TLS_KEYSTORE</code> aponta para um keystore
@@ -154,7 +157,7 @@ public class Application {
         return defaults;
     }
 
-    /** application.properties externo (data/application.properties), se existir. */
+    /** application.properties externo, se existir. */
     private static Properties loadConfig(Path file) {
         Properties config = new Properties();
         if (!Files.isRegularFile(file)) {

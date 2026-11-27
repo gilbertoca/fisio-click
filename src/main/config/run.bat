@@ -6,8 +6,9 @@ title Fisio
 rem Executa o sistema a partir desta pasta (%~dp0).
 rem Estrutura esperada:
 rem   fisio.jar
+rem   application.properties
 rem   jdk-17...\bin\java.exe   (ou JAVA_HOME/PATH)
-rem   data\                    (criada aqui se faltar)
+rem   data\                    (banco e certificado iniciais, ja vem no pacote)
 rem
 rem Para outra porta, descomente a linha abaixo:
 rem set "PORT=8081"
@@ -19,8 +20,6 @@ if not exist "fisio.jar" (
     pause
     exit /b 1
 )
-
-if not exist "data" mkdir "data"
 
 set "JAVA_BIN="
 for /d %%D in ("%~dp0jdk*") do (

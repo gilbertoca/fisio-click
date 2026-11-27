@@ -175,3 +175,10 @@ table#table span.disabled img {
 .card > table {
     margin: 0;
 }
+
+/* Login: coluna estreita e centrada — o formulário não estica na largura
+   toda em telas grandes. No mobile o max-width não interfere (100%). */
+#login {
+    max-width: 24rem;
+    margin: 0 auto;
+}

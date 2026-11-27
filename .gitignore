@@ -1,6 +1,8 @@
 /data/
 /target/
+/shade/
 /src/main/webapp/click/
 /config/
 *.p12
+!src/main/config/data/fisio.p12
 dependency-reduced-pom.xml

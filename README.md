@@ -25,45 +25,66 @@ o **Jetty 12.0.37** (HTTP/HTTPS embarcado), ambos empacotados no mesmo jar.
 mvn clean package
 ```
 
-Gera **um único arquivo**: `target/fisio.jar`, com a webapp
-embutida em `/webapp/`. Não há pasta `webapp/`, zip ou script de distribuição.
+Gera a pasta **`shade/`**, pronta para copiar para a clínica:
+
+```
+shade/
+├── fisio.jar               # webapp embutida em /webapp/
+├── run.bat
+└── data/
+    ├── application.properties
+    ├── fisio.mv.db         # banco inicial (schema + catálogo)
+    └── fisio.p12           # certificado de desenvolvimento
+```
+
+O jar é um arquivo único; o pacote acrescenta o launcher, a configuração e a
+base inicial. A origem dessa pasta é `src/main/config/`; `mvn clean` apaga
+`target/`, `shade/` e o `data/` de desenvolvimento.
 
 ## Execução
 
 ```bash
-# Sempre do diretório que contém o jar (ou informe APP_HOME)
+# Na pasta shade/ (ou informe APP_HOME)
 java -jar fisio.jar
 ```
 
-A pasta `data/` (banco H2) fica ao lado do jar e **não é criada
-automaticamente** — crie-a na primeira execução ou defina `DB_URL` com a URL
-JDBC completa de outro banco:
-
-```bash
-mkdir data
-java -jar fisio.jar
-```
+A pasta `data/` (banco H2, configuração e certificado) fica ao lado do jar e
+**não é criada automaticamente** — o pacote já a traz; se faltar, a aplicação
+para e avisa. Para usar outro banco, defina `DB_URL` com a URL JDBC completa.
 
 As migrações do Flyway rodam no startup. A pasta é resolvida pela localização
 do jar, não pelo diretório corrente, então atalhos, serviços do Windows e
 systemd funcionam sem `cd`.
 
-Para começar do zero, pare a aplicação e apague `data/`.
+Para começar do zero, pare a aplicação e apague `data/fisio.mv.db`; o Flyway
+recria o schema e o catálogo na próxima execução.
 
 ### Rodando a partir do projeto
 
-Durante o desenvolvimento o jar fica em `target/`, mas o banco e o
-`application.properties` estão na raiz do projeto. Aponte `APP_HOME` para a
-raiz — é dela que saem `<appHome>/data` e os caminhos relativos:
+O build já deixa o pacote pronto em `shade/` (jar + `data/`):
 
 ```bash
-APP_HOME="$PWD" java -jar target/fisio.jar
+java -jar shade/fisio.jar
 ```
 
-No Windows, o equivalente é `set APP_HOME=%CD%` antes de `java -jar`.
+No Windows, `shade\run.bat` faz o mesmo e localiza o JDK na pasta.
 
-No startup o banner mostra `Application home`, `Config file` e
-`Database URL`; use-o para conferir de onde a aplicação está lendo.
+### Desenvolvimento (IDE / Maven)
+
+Rodando pela IDE ou por Maven, o `appHome` é a **raiz do projeto**, então o
+app usa `data/` na raiz. O build cria essa pasta a partir do seed em
+`src/main/config/data` na fase `process-resources`, **sem sobrescrever** o que
+já existe; o seed permanece limpo para o pacote. `data/` é ignorado pelo git.
+
+```bash
+mvn compile exec:java
+```
+
+O `compile` passa pelo `process-resources` (cria o `data/` se faltar) e o
+`exec:java` sobe a classe main configurada no pom. Para recriar o banco de
+desenvolvimento a partir do seed, rode `mvn clean` (apaga `data/` e `shade/`)
+e depois `mvn compile exec:java`. Para desenvolver em HTTP, comente
+`tls.keystore`/`tls.password` em `data/application.properties`.
 
 ### `-D` não é variável de ambiente
 
@@ -73,7 +94,8 @@ A configuração vem de **variáveis de ambiente** ou do
 
 ```bash
 # Correto: variável de ambiente
-APP_HOME="$PWD" java -jar target/fisio.jar
+DB_URL="jdbc:h2:file:/dados/fisio;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE" \
+  java -jar fisio.jar
 
 # Correto: arquivo <appHome>/data/application.properties
 # db.url=jdbc:h2:file:/dados/fisio;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
@@ -82,10 +104,6 @@ APP_HOME="$PWD" java -jar target/fisio.jar
 `DB_URL` aceita **somente uma URL JDBC** (começando com `jdbc:`). Uma pasta
 (ex.: `./data`) não é aceita — para mudar a pasta do banco use `APP_HOME`, ou
 informe a URL JDBC completa apontando para o arquivo `fisio`.
-
-O `application.properties` é procurado em `<appHome>/data`. Com o jar em
-`target/` e sem `APP_HOME`, ele não é encontrado (e o TLS configurado nele
-também não vale).
 
 ## Configuração
 
@@ -105,10 +123,10 @@ também não vale).
 
 ## Configuração em arquivo
 
-Em vez de variáveis de ambiente, use
-`<appHome>/data/application.properties` (a mesma pasta do banco, ignorada pelo
-git — segredos e certificado não vão para o repositório). A precedência é
-**ambiente > arquivo > padrões do jar**:
+Em vez de variáveis de ambiente, edite `data/application.properties` no
+pacote (o modelo versionado fica em
+`src/main/config/data/application.properties` e é copiado no build). A
+precedência é **ambiente > arquivo > padrões do jar**:
 
 ```properties
 server.port=8080
@@ -125,18 +143,19 @@ keystore é resolvido a partir da pasta do jar.
 
 ## HTTPS opcional
 
-O certificado fica **fora** do jar, em `config/fisio.p12`, gerado uma vez por
-instalação — nunca reaproveite o mesmo arquivo entre clínicas. Com
-`TLS_KEYSTORE` definido, o Jetty sobe **HTTPS na mesma `PORT`** (sem segunda
-porta e sem redirecionamento):
+O pacote traz um certificado de **desenvolvimento** em `data/fisio.p12`
+(senha `changeit`, SAN `fisio.local`/`localhost`/`127.0.0.1`). Para produção,
+gere um por instalação e substitua o arquivo — nunca reaproveite o mesmo
+certificado entre clínicas. Com `tls.keystore` (ou `TLS_KEYSTORE`) definido, o
+Jetty sobe **HTTPS na mesma `PORT`** (sem segunda porta e sem
+redirecionamento):
 
 ```bash
-mkdir -p config
 keytool -genkeypair -alias fisio -keyalg RSA -keysize 2048 -validity 3650 \
-  -storetype PKCS12 -keystore config/fisio.p12 -storepass "SENHA" \
+  -storetype PKCS12 -keystore data/fisio.p12 -storepass "SENHA" \
   -dname "CN=fisio.local" -ext "SAN=dns:fisio.local,ip:192.168.0.10"
 
-TLS_KEYSTORE=config/fisio.p12 TLS_PASSWORD="SENHA" \
+TLS_KEYSTORE=data/fisio.p12 TLS_PASSWORD="SENHA" \
   java -jar fisio.jar
 ```
 
@@ -145,24 +164,14 @@ partir da pasta do jar. O nome digitado no navegador precisa constar no `SAN`
 do certificado — o Jetty 12 valida SNI e responde `400 Invalid SNI` quando não
 consta. Ajuste `CN`/`SAN` para todos os nomes e IPs usados pelas estações e
 instale o certificado (exporte o `.p12` como `.cer`) nos navegadores da
-clínica. Sem `TLS_KEYSTORE` (ou `tls.keystore` no arquivo), a aplicação sobe
-em HTTP.
+clínica. Para voltar a HTTP, comente `tls.keystore`/`tls.password` no
+`data/application.properties`.
 
 ### Desenvolvimento
 
-Para testar sem certificado de produção, gere um autoassinado em `data/`
-(não versionado) e aponte o arquivo de configuração para ele:
-
-```bash
-keytool -genkeypair -alias fisio -keyalg RSA -keysize 2048 -validity 3650 \
-  -storetype PKCS12 -keystore data/fisio.p12 -storepass "SENHA" \
-  -dname "CN=fisio.local" -ext "SAN=dns:fisio.local,dns:localhost,ip:127.0.0.1"
-```
-
-```properties
-tls.keystore=data/fisio.p12
-tls.password=SENHA
-```
+O `data/fisio.p12` que acompanha o pacote é só para desenvolvimento. Para
+gerar outro autoassinado, use o comando acima com
+`-ext "SAN=dns:fisio.local,dns:localhost,ip:127.0.0.1"`.
 
 ## Backend de banco
 
